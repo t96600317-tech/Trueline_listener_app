@@ -65,6 +65,12 @@ class ListenerRepository(
         storage.clearSession()
     }
 
+    fun getSavedOnboardingStep(): String? = storage.getOnboardingStep()
+    fun getSavedKYCStatus(): String? = storage.getKYCStatus()
+    fun getSavedPhone(): String? = storage.getPhone()
+    fun saveOnboardingStep(step: String) = storage.saveOnboardingStep(step)
+    fun saveKYCStatus(status: String) = storage.saveKYCStatus(status)
+
     private suspend inline fun <reified T> executeWithFallback(
         crossinline block: suspend (host: String) -> T
     ): T {
@@ -109,6 +115,10 @@ class ListenerRepository(
         if (response.success && response.data != null) {
             setAuthToken(response.data.token)
             storage.savePhone(phone)
+            val step = response.data.onboarding_step ?: response.data.listener?.onboarding_step ?: "profile_setup"
+            storage.saveOnboardingStep(step)
+            val kyc = response.data.kyc_status ?: response.data.listener?.kyc_status ?: "pending"
+            storage.saveKYCStatus(kyc)
         }
         return response
     }
@@ -180,7 +190,7 @@ class ListenerRepository(
 
     suspend fun updateProfile(name: String, title: String, bio: String, languages: List<String>): ApiResponse<ListenerProfile> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<ListenerProfile> = try {
             executeWithFallback { host ->
                 client.patch("http://$host/api/v1/listener/onboarding/profile") {
                     contentType(ContentType.Application.Json)
@@ -191,11 +201,17 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to update profile"))
         }
+
+        if (response.success && response.data != null) {
+            val step = response.data.onboarding_step.ifBlank { "voice_intro" }
+            storage.saveOnboardingStep(step)
+        }
+        return response
     }
 
     suspend fun updateVoiceIntro(audioUrl: String): ApiResponse<ListenerProfile> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<ListenerProfile> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/voice") {
                     contentType(ContentType.Application.Json)
@@ -206,11 +222,16 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to upload voice sample"))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("face_verification")
+        }
+        return response
     }
 
     suspend fun submitPAN(pan: String): ApiResponse<SimpleMessageResponse> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/pan") {
                     contentType(ContentType.Application.Json)
@@ -221,11 +242,16 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to submit PAN"))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("agreement")
+        }
+        return response
     }
 
     suspend fun submitBank(accountNumber: String, ifsc: String): ApiResponse<SimpleMessageResponse> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/bank") {
                     contentType(ContentType.Application.Json)
@@ -236,11 +262,16 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to submit bank account"))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("agreement")
+        }
+        return response
     }
 
     suspend fun submitSelfie(selfieUrl: String, livenessScore: Double = 0.98): ApiResponse<SimpleMessageResponse> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/selfie") {
                     contentType(ContentType.Application.Json)
@@ -251,11 +282,16 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to submit selfie"))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("kyc_documents")
+        }
+        return response
     }
 
     suspend fun submitAgreement(version: String = "1.0"): ApiResponse<SimpleMessageResponse> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/agreement") {
                     contentType(ContentType.Application.Json)
@@ -266,11 +302,16 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to submit agreement"))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("application_submitted")
+        }
+        return response
     }
 
     suspend fun submitOnboarding(): ApiResponse<SimpleMessageResponse> {
         val token = getAuthToken()
-        return try {
+        val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/submit") {
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
@@ -279,6 +320,11 @@ class ListenerRepository(
         } catch (e: Exception) {
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Submission timed out. Please retry."))
         }
+
+        if (response.success) {
+            storage.saveOnboardingStep("application_submitted")
+        }
+        return response
     }
 
     suspend fun setAvailability(availability: String): ApiResponse<SimpleMessageResponse> {

@@ -181,15 +181,50 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         restoreSession()
     }
 
+    private fun mapAndApplyStep(step: String, kyc: String) {
+        val stepNormalized = step.trim().lowercase()
+        val kycNormalized = kyc.trim().lowercase()
+
+        if (kycNormalized == "approved" || stepNormalized in listOf("approved", "approved_welcome")) {
+            isApprovedListener = true
+            _currentStep.value = OnboardingStep.APPROVED_WELCOME
+            onEnterPortal?.invoke()
+        } else if (stepNormalized in listOf("application_submitted", "pending_approval", "application_pending", "submitted", "under_review") ||
+            (kycNormalized == "pending" && stepNormalized in listOf("agreement", "agreements"))) {
+            _currentStep.value = OnboardingStep.SUBMITTED_PENDING_APPROVAL
+        } else {
+            _currentStep.value = when (stepNormalized) {
+                "voice_intro", "voice" -> OnboardingStep.VOICE_INTRO
+                "face_verification", "face", "selfie" -> OnboardingStep.FACE_VERIFICATION
+                "kyc_documents", "kyc_document", "kyc", "pan", "aadhaar" -> OnboardingStep.KYC_DOCUMENT
+                "agreement", "agreements" -> OnboardingStep.AGREEMENT
+                else -> OnboardingStep.PROFILE_SETUP
+            }
+        }
+    }
+
     fun restoreSession() {
         isCheckingSession = true
         scope.launch {
             try {
                 val token = repository.getAuthToken()
+                val savedPhone = repository.getSavedPhone()
+                val savedStep = repository.getSavedOnboardingStep()
+                val savedKyc = repository.getSavedKYCStatus()
+
                 if (token.isNullOrBlank()) {
                     isCheckingSession = false
                     _currentStep.value = OnboardingStep.PHONE_INPUT
                     return@launch
+                }
+
+                if (!savedPhone.isNullOrBlank()) {
+                    phoneNumber = savedPhone
+                }
+
+                // Immediately apply local saved step for instant UI load
+                if (!savedStep.isNullOrBlank()) {
+                    mapAndApplyStep(savedStep, savedKyc ?: "pending")
                 }
 
                 val profileResp = repository.getMe()
@@ -204,29 +239,18 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
                     if (p.photo_url.isNotBlank()) capturedSelfieUri = p.photo_url
                     if (p.audio_sample_url.isNotBlank()) recordedVoicePath = p.audio_sample_url
 
-                    if (kyc.lowercase() == "approved" || step.lowercase() in listOf("approved", "approved_welcome")) {
-                        isApprovedListener = true
-                        _currentStep.value = OnboardingStep.APPROVED_WELCOME
-                        onEnterPortal?.invoke()
-                    } else if (step.lowercase() in listOf("application_submitted", "pending_approval", "application_pending", "submitted", "under_review") ||
-                               (kyc.lowercase() == "pending" && step.lowercase() in listOf("agreement", "agreements"))) {
-                        _currentStep.value = OnboardingStep.SUBMITTED_PENDING_APPROVAL
-                    } else {
-                        _currentStep.value = when (step.lowercase()) {
-                            "voice_intro", "voice" -> OnboardingStep.VOICE_INTRO
-                            "face_verification", "face", "selfie" -> OnboardingStep.FACE_VERIFICATION
-                            "kyc_documents", "kyc_document", "kyc", "pan", "aadhaar" -> OnboardingStep.KYC_DOCUMENT
-                            "agreement", "agreements" -> OnboardingStep.AGREEMENT
-                            else -> OnboardingStep.PROFILE_SETUP
-                        }
-                    }
-                } else {
-                    // Invalid/Expired token - clear session and stay on phone input
+                    mapAndApplyStep(step, kyc)
+                } else if (profileResp.error?.code == "UNAUTHORIZED" || profileResp.error?.code == "INVALID_TOKEN") {
+                    // Only clear session on explicit authentication failure from server
                     repository.clearAuthSession()
                     _currentStep.value = OnboardingStep.PHONE_INPUT
                 }
             } catch (e: Exception) {
-                _currentStep.value = OnboardingStep.PHONE_INPUT
+                // If offline / network error, retain locally restored state
+                val savedStep = repository.getSavedOnboardingStep()
+                if (!savedStep.isNullOrBlank()) {
+                    mapAndApplyStep(savedStep, repository.getSavedKYCStatus() ?: "pending")
+                }
             } finally {
                 isCheckingSession = false
             }
