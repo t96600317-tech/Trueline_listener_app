@@ -179,11 +179,12 @@ class ListenerRepository(
     }
 
     suspend fun updateProfile(name: String, title: String, bio: String, languages: List<String>): ApiResponse<ListenerProfile> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.patch("http://$host/api/v1/listener/onboarding/profile") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(UpdateProfileRequest(name, title, bio, languages))
                 }.body()
             }
@@ -193,11 +194,12 @@ class ListenerRepository(
     }
 
     suspend fun updateVoiceIntro(audioUrl: String): ApiResponse<ListenerProfile> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/voice") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("audio_url" to audioUrl))
                 }.body()
             }
@@ -207,11 +209,12 @@ class ListenerRepository(
     }
 
     suspend fun submitPAN(pan: String): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/pan") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("pan" to pan))
                 }.body()
             }
@@ -221,11 +224,12 @@ class ListenerRepository(
     }
 
     suspend fun submitBank(accountNumber: String, ifsc: String): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/bank") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("account_number" to accountNumber, "ifsc" to ifsc))
                 }.body()
             }
@@ -235,11 +239,12 @@ class ListenerRepository(
     }
 
     suspend fun submitSelfie(selfieUrl: String, livenessScore: Double = 0.98): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/selfie") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("selfie_url" to selfieUrl, "liveness_score" to livenessScore))
                 }.body()
             }
@@ -249,11 +254,12 @@ class ListenerRepository(
     }
 
     suspend fun submitAgreement(version: String = "1.0"): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/kyc/agreement") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("agreement_version" to version))
                 }.body()
             }
@@ -263,10 +269,11 @@ class ListenerRepository(
     }
 
     suspend fun submitOnboarding(): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/onboarding/submit") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -275,11 +282,12 @@ class ListenerRepository(
     }
 
     suspend fun setAvailability(availability: String): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken()
         return try {
             executeWithFallback { host ->
                 client.post("http://$host/api/v1/listener/availability") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("availability" to availability))
                 }.body()
             }
