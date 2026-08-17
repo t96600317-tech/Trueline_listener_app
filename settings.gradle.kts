@@ -14,18 +14,20 @@ pluginManagement {
     }
 }
 
-dependencyResolutionManagement {
-    repositories {
-        google {
-            mavenContent {
-                includeGroupAndSubgroups("androidx")
-                includeGroupAndSubgroups("com.android")
-                includeGroupAndSubgroups("com.google")
+    dependencyResolutionManagement {
+        repositories {
+            google {
+                mavenContent {
+                    includeGroupAndSubgroups("androidx")
+                    includeGroupAndSubgroups("com.android")
+                    includeGroupAndSubgroups("com.google")
+                }
             }
+            mavenCentral()
+            maven { url = uri("https://maven.zego.im") }
+            maven { url = uri("https://www.jitpack.io") }
         }
-        mavenCentral()
     }
-}
 
 include(":androidApp")
 include(":shared")

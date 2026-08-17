@@ -21,6 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Headset
 import com.example.trueline_listener.ui.theme.*
 
 @Composable
@@ -305,16 +310,21 @@ fun IncomingCallView(viewModel: HomeViewModel) {
                 color = Color.White.copy(alpha = 0.1f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("🎧", fontSize = 48.sp)
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Filled.Headset,
+                        contentDescription = null,
+                        tint = Accent,
+                        modifier = Modifier.size(52.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             Text("Incoming Audio Call", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Anonymous User", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("Caller (Verified)", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Rate: 3 coins/min (Backend Metered)", color = Color(0xFF10B981), fontSize = 14.sp)
+            Text("Rate: ₹4.5/min earning (Server Metered)", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
 
         Row(
@@ -330,7 +340,12 @@ fun IncomingCallView(viewModel: HomeViewModel) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text("✕", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Filled.CallEnd,
+                    contentDescription = "Decline",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
 
             Button(
@@ -340,7 +355,12 @@ fun IncomingCallView(viewModel: HomeViewModel) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text("📞", fontSize = 26.sp)
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Filled.Call,
+                    contentDescription = "Accept",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }
@@ -370,16 +390,21 @@ fun ActiveCallView(viewModel: HomeViewModel) {
                 border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF10B981))
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("🗣️", fontSize = 52.sp)
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Filled.Headset,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(56.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text("In Call with Anonymous User", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+            Text("In Call with Caller", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
             Spacer(modifier = Modifier.height(10.dp))
-            Text(timerStr, color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+            Text(timerStr, color = Color.White, fontSize = 42.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Earning: +3.0 coins/min", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text("Earning: +₹4.5/min", color = Color(0xFF10B981), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
 
         Row(
@@ -394,11 +419,16 @@ fun ActiveCallView(viewModel: HomeViewModel) {
                 modifier = Modifier.size(56.dp),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (viewModel.isMuted) Color.White else Color.White.copy(alpha = 0.2f)
+                    containerColor = if (viewModel.isMuted) Color(0xFFEF4444) else Color.White.copy(alpha = 0.2f)
                 ),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text(if (viewModel.isMuted) "🔇" else "🎙️", fontSize = 22.sp)
+                androidx.compose.material3.Icon(
+                    imageVector = if (viewModel.isMuted) Icons.Filled.MicOff else Icons.Filled.Mic,
+                    contentDescription = "Mute",
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
             }
 
             Button(
@@ -408,7 +438,12 @@ fun ActiveCallView(viewModel: HomeViewModel) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text("Hangup", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Filled.CallEnd,
+                    contentDescription = "Hang Up",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }

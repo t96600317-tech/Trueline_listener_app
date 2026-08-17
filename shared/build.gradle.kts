@@ -51,6 +51,7 @@ kotlin {
             implementation(libs.accompanist.permissions)
             implementation(libs.mlkit.face.detection)
             implementation(libs.ktor.client.okhttp)
+            implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
