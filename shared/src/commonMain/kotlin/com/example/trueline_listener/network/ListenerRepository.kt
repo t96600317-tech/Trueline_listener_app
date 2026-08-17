@@ -387,6 +387,48 @@ class ListenerRepository(
             ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to submit report"))
         }
     }
+
+    // --- Chat API ---
+    suspend fun getChatConversations(): ApiResponse<List<ChatConversationData>> {
+        val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
+        return try {
+            executeWithFallback { host ->
+                client.get("http://$host/api/v1/chats") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to fetch conversations"))
+        }
+    }
+
+    suspend fun getChatMessages(targetUserId: String): ApiResponse<List<ChatMessageData>> {
+        val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
+        return try {
+            executeWithFallback { host ->
+                client.get("http://$host/api/v1/chats/$targetUserId/messages") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to fetch messages"))
+        }
+    }
+
+    suspend fun sendChatMessage(targetUserId: String, content: String): ApiResponse<ChatMessageData> {
+        val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
+        return try {
+            executeWithFallback { host ->
+                client.post("http://$host/api/v1/chats/$targetUserId/messages") {
+                    contentType(ContentType.Application.Json)
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    setBody(SendMessageRequest(content))
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to send message"))
+        }
+    }
 }
 
 @Serializable

@@ -8,7 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-enum class PortalTab { HOME, EARNINGS, PROFILE }
+enum class PortalTab { HOME, CHAT, EARNINGS, PROFILE }
 
 enum class PortalSubScreen {
     NONE,
@@ -87,6 +87,14 @@ class MainPortalViewModel(
     var languagesText by mutableStateOf("Hindi, Bhojpuri")
         private set
 
+    // Chat States
+    var conversations = androidx.compose.runtime.mutableStateListOf<ChatConversationData>()
+    var isChatListLoading by mutableStateOf(false)
+    var activeChatUserId by mutableStateOf<String?>(null)
+    var activeChatUserName by mutableStateOf("")
+    var currentChatMessages = androidx.compose.runtime.mutableStateListOf<ChatMessageData>()
+    var isChatMessagesLoading by mutableStateOf(false)
+
     init {
         refreshAllData()
     }
@@ -152,8 +160,55 @@ class MainPortalViewModel(
                 }
             }
 
+            fetchConversations()
+
             isLoading = false
         }
+    }
+
+    // --- Chat Functions ---
+    fun fetchConversations() {
+        isChatListLoading = true
+        scope.launch {
+            val res = repository.getChatConversations()
+            isChatListLoading = false
+            if (res.success && res.data != null) {
+                conversations.clear()
+                conversations.addAll(res.data)
+            }
+        }
+    }
+
+    fun openChat(userId: String, userName: String) {
+        activeChatUserId = userId
+        activeChatUserName = userName
+        isChatMessagesLoading = true
+        currentChatMessages.clear()
+        scope.launch {
+            val res = repository.getChatMessages(userId)
+            isChatMessagesLoading = false
+            if (res.success && res.data != null) {
+                currentChatMessages.addAll(res.data)
+            }
+        }
+    }
+
+    fun sendChatMessage(content: String) {
+        val targetId = activeChatUserId ?: return
+        if (content.isBlank()) return
+        scope.launch {
+            val res = repository.sendChatMessage(targetId, content.trim())
+            if (res.success && res.data != null) {
+                currentChatMessages.add(res.data)
+                fetchConversations()
+            }
+        }
+    }
+
+    fun closeChat() {
+        activeChatUserId = null
+        activeChatUserName = ""
+        currentChatMessages.clear()
     }
 
     fun toggleAvailability() {

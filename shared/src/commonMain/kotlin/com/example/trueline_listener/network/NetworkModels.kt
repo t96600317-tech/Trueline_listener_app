@@ -107,3 +107,37 @@ data class SimpleMessageResponse(
     val message: String? = null,
     val status: String? = null
 )
+
+@Serializable
+data class ChatConversationData(
+    val listener_id: String = "",
+    val listener_name: String = "",
+    val listener_title: String = "",
+    val listener_photo_url: String = "",
+    val listener_availability: String = "online",
+    val user_id: String = "",
+    val user_name: String = "",
+    val user_title: String = "",
+    val user_photo_url: String = "",
+    val user_availability: String = "online",
+    val last_message: String = "",
+    val last_message_sender: String = "",
+    val last_message_time: String = "",
+    val unread_count: Int = 0
+)
+
+@Serializable
+data class ChatMessageData(
+    val id: String = "",
+    val user_id: String = "",
+    val partner_id: String = "",
+    val sender_type: String = "",
+    val content: String = "",
+    val created_at: String = "",
+    val read_at: String? = null
+)
+
+@Serializable
+data class SendMessageRequest(
+    val content: String
+)

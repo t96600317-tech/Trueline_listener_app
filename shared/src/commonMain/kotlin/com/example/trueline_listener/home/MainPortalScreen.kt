@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MonetizationOn
 import androidx.compose.material.icons.rounded.Notifications
@@ -34,9 +36,11 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                 PortalTopHeader(viewModel = viewModel)
             },
             bottomBar = {
+                val unreadCount = viewModel.conversations.sumOf { it.unread_count }
                 PortalBottomNavigation(
                     currentTab = viewModel.currentTab,
-                    onTabSelected = { viewModel.selectTab(it) }
+                    onTabSelected = { viewModel.selectTab(it) },
+                    unreadCount = unreadCount
                 )
             },
             containerColor = Color(0xFFF8FAFB)
@@ -75,6 +79,9 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                                 } else {
                                     HomeDashboardScreen(viewModel = viewModel)
                                 }
+                            }
+                            PortalTab.CHAT -> {
+                                ListenerChatScreen(viewModel = viewModel)
                             }
                             PortalTab.EARNINGS -> {
                                 EarningsHubScreen(viewModel = viewModel)
@@ -141,42 +148,51 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
             Text(
                 text = "Line",
                 fontSize = 19.sp,
-                fontWeight = FontWeight.Black,
-                color = Primary
+                fontWeight = FontWeight.Light,
+                color = Color(0xFF111827)
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFE2EFF1))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Accent.copy(alpha = 0.15f),
+                modifier = Modifier.padding(top = 1.dp)
             ) {
                 Text(
-                    text = "LISTENER",
-                    fontSize = 10.sp,
+                    text = "PARTNER",
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Primary,
-                    letterSpacing = 0.5.sp
+                    color = Color(0xFFB45309),
+                    letterSpacing = 0.8.sp,
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                 )
             }
         }
 
-        // Notification Bell Icon
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .clickable { /* Notifications */ },
-            contentAlignment = Alignment.Center
+        // Live Earning Rate Pill
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Primary.copy(alpha = 0.09f),
+            modifier = Modifier.padding(top = 1.dp)
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Notifications,
-                contentDescription = "Notifications",
-                tint = Primary,
-                modifier = Modifier.size(22.dp)
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (viewModel.isOnline) OnlineSuccess else Color.Gray,
+                    modifier = Modifier.size(7.dp)
+                ) {}
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (viewModel.isOnline) "₹4.5/min Live" else "Offline",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (viewModel.isOnline) Color(0xFF15803D) else Color.Gray
+                )
+            }
         }
     }
 }
@@ -184,7 +200,8 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
 @Composable
 fun PortalBottomNavigation(
     currentTab: PortalTab,
-    onTabSelected: (PortalTab) -> Unit
+    onTabSelected: (PortalTab) -> Unit,
+    unreadCount: Int = 0
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -194,7 +211,7 @@ fun PortalBottomNavigation(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 24.dp),
+                .padding(vertical = 8.dp, horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -204,6 +221,15 @@ fun PortalBottomNavigation(
                 icon = Icons.Rounded.Home,
                 isSelected = currentTab == PortalTab.HOME,
                 onClick = { onTabSelected(PortalTab.HOME) }
+            )
+
+            // Chat Tab
+            BottomNavItem(
+                title = "Chat",
+                icon = Icons.AutoMirrored.Filled.Chat,
+                badgeCount = unreadCount,
+                isSelected = currentTab == PortalTab.CHAT,
+                onClick = { onTabSelected(PortalTab.CHAT) }
             )
 
             // Earnings Tab
@@ -230,6 +256,7 @@ private fun BottomNavItem(
     title: String,
     icon: ImageVector,
     isSelected: Boolean,
+    badgeCount: Int = 0,
     onClick: () -> Unit
 ) {
     Column(
@@ -237,18 +264,38 @@ private fun BottomNavItem(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            modifier = Modifier.size(24.dp),
-            tint = if (isSelected) Primary else TextMuted
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                modifier = Modifier.size(24.dp),
+                tint = if (isSelected) Primary else TextMuted
+            )
+            if (badgeCount > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color = Accent,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (badgeCount > 9) "9+" else badgeCount.toString(),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Dark
+                        )
+                    }
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = title,
-            fontSize = 11.5.sp,
+            fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = if (isSelected) Primary else TextMuted
         )
