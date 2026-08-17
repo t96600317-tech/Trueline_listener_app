@@ -4,14 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-expect fun CameraPreview(
-    modifier: Modifier,
-    onPhotoCaptured: (String) -> Unit
-)
-
-@Composable
-expect fun FaceVerificationCamera(
-    modifier: Modifier,
+expect fun FaceVerificationCameraWrapper(
+    modifier: Modifier = Modifier,
     viewModel: OnboardingViewModel,
     onPhotoCaptured: (String) -> Unit
 )
