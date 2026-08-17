@@ -233,6 +233,34 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         }
     }
 
+    var isCheckingApprovalStatus by mutableStateOf(false)
+        private set
+
+    fun checkApprovalStatus() {
+        if (isCheckingApprovalStatus) return
+        isCheckingApprovalStatus = true
+        scope.launch {
+            try {
+                val profileResp = repository.getMe()
+                if (profileResp.success && profileResp.data != null) {
+                    val p = profileResp.data
+                    val step = p.onboarding_step.trim()
+                    val kyc = p.kyc_status.trim()
+
+                    if (kyc.lowercase() == "approved" || step.lowercase() in listOf("approved", "approved_welcome")) {
+                        isApprovedListener = true
+                        _currentStep.value = OnboardingStep.APPROVED_WELCOME
+                        onEnterPortal?.invoke()
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore transient network errors during background polling
+            } finally {
+                isCheckingApprovalStatus = false
+            }
+        }
+    }
+
     fun resetToStart() {
         isApprovedListener = false
         phoneNumber = ""

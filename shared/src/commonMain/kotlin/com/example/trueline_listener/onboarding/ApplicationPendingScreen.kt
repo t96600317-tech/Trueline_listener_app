@@ -5,9 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,131 +24,214 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.trueline_listener.ui.OnboardingProgressHeader
+import com.example.trueline_listener.ui.TrueLineWaveformLoader
 import com.example.trueline_listener.ui.theme.*
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ApplicationPendingScreen(viewModel: OnboardingViewModel) {
     val scrollState = rememberScrollState()
+
+    // 10-second background polling
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.checkApprovalStatus()
+            delay(10000)
+        }
+    }
+
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = viewModel.isCheckingApprovalStatus,
+        onRefresh = { viewModel.checkApprovalStatus() }
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Light
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .pullRefresh(pullRefreshState)
         ) {
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState),
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OnboardingProgressHeader(
-                    currentStep = 7,
-                    totalSteps = 7,
-                    titleNormal = "We're reviewing",
-                    titleHighlight = "your application",
-                    subtitle = "Usually approved within 24 hours. We'll notify you as soon as it's done."
-                )
-
-                Spacer(modifier = Modifier.height(36.dp))
-
-                // Hourglass Badge (Tapping logs out for testing)
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFBF1E6))
-                        .clickable { viewModel.logout() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("⏳", fontSize = 42.sp)
-                }
-
-                Spacer(modifier = Modifier.height(36.dp))
-
-                // 3-Step Review Timeline
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Timeline Item 1: Application submitted (Done)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(OnlineSuccess),
-                            contentAlignment = Alignment.Center
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OnboardingProgressHeader(
+                        currentStep = 7,
+                        totalSteps = 7,
+                        titleNormal = "We're reviewing",
+                        titleHighlight = "your application",
+                        subtitle = "Usually approved within 24 hours. We'll notify you as soon as it's done."
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // Auto-Polling & Pull-to-Refresh Status Pill
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFE8F5E9),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA5D6A7))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("✓", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text("Application submitted", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            Text("Today, Just now", fontSize = 12.5.sp, color = TextSecondary)
+                            Surface(
+                                shape = CircleShape,
+                                color = OnlineSuccess,
+                                modifier = Modifier.size(8.dp)
+                            ) {}
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (viewModel.isCheckingApprovalStatus) "Checking status..." else "Live checking every 10s · Pull down to reload",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2E7D32)
+                            )
                         }
                     }
 
-                    // Timeline Item 2: Team review (Active Amber)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Accent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("2", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // Hourglass Badge (Tapping logs out for testing)
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFBF1E6))
+                            .clickable { viewModel.logout() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("⏳", fontSize = 38.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // 3-Step Review Timeline
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                        // Timeline Item 1: Application submitted (Done)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(OnlineSuccess),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("✓", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text("Application submitted", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Today, Completed", fontSize = 12.5.sp, color = TextSecondary)
+                            }
                         }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text("Team review", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            Text("In progress", fontSize = 12.5.sp, color = TextSecondary)
+
+                        // Timeline Item 2: Team review (Active Amber)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Accent),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("2", color = Dark, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text("Team review & KYC verification", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("In progress", fontSize = 12.5.sp, color = TextSecondary)
+                            }
+                        }
+
+                        // Timeline Item 3: Approved & live (Pending)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(BorderSubtle),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("3", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text("Approved & live", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                                Text("Start taking paid calls", fontSize = 12.5.sp, color = TextMuted)
+                            }
                         }
                     }
 
-                    // Timeline Item 3: Approved & live (Pending)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(BorderSubtle),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("3", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text("Approved & live", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextMuted)
-                            Text("Start taking calls", fontSize = 12.5.sp, color = TextMuted)
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                // Footer Actions & Reload Button
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(
+                        onClick = { viewModel.checkApprovalStatus() },
+                        enabled = !viewModel.isCheckingApprovalStatus,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Accent)
+                    ) {
+                        if (viewModel.isCheckingApprovalStatus) {
+                            TrueLineWaveformLoader(
+                                size = 24.dp,
+                                barColor = Dark,
+                                accentColor = Primary
+                            )
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, tint = Dark, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Check Status Now", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Dark)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Questions? WhatsApp listener support anytime.",
+                        fontSize = 12.5.sp,
+                        color = TextMuted,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
             }
 
-            // Footer Support Info
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Questions? WhatsApp our listener support any time.",
-                    fontSize = 13.sp,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-            }
+            PullRefreshIndicator(
+                refreshing = viewModel.isCheckingApprovalStatus,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                backgroundColor = Color.White,
+                contentColor = Primary
+            )
         }
     }
 }
