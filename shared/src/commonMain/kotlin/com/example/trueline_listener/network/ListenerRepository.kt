@@ -17,16 +17,27 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class ListenerRepository(
-    private var primaryHost: String = "127.0.0.1:8080"
+    private var primaryHost: String = "api.truelineapp.in"
 ) {
     private val storage = getSessionStorage()
     private var authToken: String? = storage.getAuthToken()
     private val candidateHosts = listOf(
+        "api.truelineapp.in",
         "127.0.0.1:8080",
         "localhost:8080",
         "192.168.1.6:8080",
         "10.0.2.2:8080"
     ).distinct()
+
+    private fun getBaseUrl(host: String): String {
+        return if (host.startsWith("http://") || host.startsWith("https://")) {
+            host
+        } else if (host.contains("api.truelineapp.in") || !host.contains(":")) {
+            "https://$host"
+        } else {
+            "http://$host"
+        }
+    }
 
     private val client = HttpClient {
         install(HttpTimeout) {
@@ -90,7 +101,7 @@ class ListenerRepository(
     suspend fun requestOtp(phone: String): ApiResponse<OtpResponse> {
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/auth/otp/request") {
+                client.post("${getBaseUrl(host)}/api/v1/auth/otp/request") {
                     contentType(ContentType.Application.Json)
                     setBody(OtpRequest(phone, "listener"))
                 }.body()
@@ -103,7 +114,7 @@ class ListenerRepository(
     suspend fun verifyOtp(phone: String, otp: String): ApiResponse<AuthResponse> {
         val response: ApiResponse<AuthResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/auth/otp/verify") {
+                client.post("${getBaseUrl(host)}/api/v1/auth/otp/verify") {
                     contentType(ContentType.Application.Json)
                     setBody(OtpVerifyRequest(phone, otp, "listener"))
                 }.body()
@@ -127,7 +138,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<ListenerProfile> = try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/me") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/me") {
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -145,7 +156,7 @@ class ListenerRepository(
     suspend fun acceptCall(sessionId: String): ApiResponse<CallAcceptResponse> {
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/calls/$sessionId/accept") {
+                client.post("${getBaseUrl(host)}/api/v1/calls/$sessionId/accept") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -157,7 +168,7 @@ class ListenerRepository(
     suspend fun endCall(sessionId: String, reason: String = "listener_hangup"): ApiResponse<SimpleMessageResponse> {
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/calls/$sessionId/end") {
+                client.post("${getBaseUrl(host)}/api/v1/calls/$sessionId/end") {
                     contentType(ContentType.Application.Json)
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("reason" to reason))
@@ -169,8 +180,9 @@ class ListenerRepository(
     }
 
     fun observeCallEvents(sessionId: String): Flow<CallEvent> = flow {
+        val isSecure = primaryHost.contains("api.truelineapp.in")
         val host = primaryHost.split(":")[0]
-        val port = primaryHost.split(":").getOrNull(1)?.toInt() ?: 8080
+        val port = if (isSecure) 443 else (primaryHost.split(":").getOrNull(1)?.toInt() ?: 8080)
         client.webSocket(
             method = HttpMethod.Get,
             host = host,
@@ -192,7 +204,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<ListenerProfile> = try {
             executeWithFallback { host ->
-                client.patch("http://$host/api/v1/listener/onboarding/profile") {
+                client.patch("${getBaseUrl(host)}/api/v1/listener/onboarding/profile") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(UpdateProfileRequest(name, title, bio, languages))
@@ -213,7 +225,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<ListenerProfile> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/voice") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/voice") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("audio_url" to audioUrl))
@@ -233,7 +245,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/kyc/pan") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/kyc/pan") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("pan" to pan))
@@ -253,7 +265,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/kyc/bank") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/kyc/bank") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("account_number" to accountNumber, "ifsc" to ifsc))
@@ -273,7 +285,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/kyc/selfie") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/kyc/selfie") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("selfie_url" to selfieUrl, "liveness_score" to livenessScore))
@@ -293,7 +305,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/kyc/agreement") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/kyc/agreement") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("agreement_version" to version))
@@ -313,7 +325,7 @@ class ListenerRepository(
         val token = getAuthToken()
         val response: ApiResponse<SimpleMessageResponse> = try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/onboarding/submit") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/onboarding/submit") {
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -331,7 +343,7 @@ class ListenerRepository(
         val token = getAuthToken()
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/availability") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/availability") {
                     contentType(ContentType.Application.Json)
                     token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("availability" to availability))
@@ -345,7 +357,7 @@ class ListenerRepository(
     suspend fun getEarnings(): ApiResponse<EarningsSummaryResponse> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/earnings") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/earnings") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -357,7 +369,7 @@ class ListenerRepository(
     suspend fun getHomeDashboard(): ApiResponse<HomeDashboardResponse> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/home") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/home") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -369,7 +381,7 @@ class ListenerRepository(
     suspend fun getMilestones(): ApiResponse<MilestonesHubResponse> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/milestones") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/milestones") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -381,7 +393,7 @@ class ListenerRepository(
     suspend fun getPerformanceScore(): ApiResponse<PerformanceScoreResponse> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/score") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/score") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -393,7 +405,7 @@ class ListenerRepository(
     suspend fun getDetailedEarnings(): ApiResponse<DetailedEarningsResponse> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/detailed-earnings") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/detailed-earnings") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -405,7 +417,7 @@ class ListenerRepository(
     suspend fun requestWithdrawal(amountCoins: Double, upiId: String): ApiResponse<WithdrawResponse> {
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/withdraw") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/withdraw") {
                     contentType(ContentType.Application.Json)
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("amount_coins" to amountCoins, "upi_id" to upiId))
@@ -419,7 +431,7 @@ class ListenerRepository(
     suspend fun getBlockedUsers(): ApiResponse<List<BlockedUserItem>> {
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/listener/blocked-users") {
+                client.get("${getBaseUrl(host)}/api/v1/listener/blocked-users") {
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
@@ -431,7 +443,7 @@ class ListenerRepository(
     suspend fun submitReport(reason: String, details: String): ApiResponse<SimpleMessageResponse> {
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/listener/reports") {
+                client.post("${getBaseUrl(host)}/api/v1/listener/reports") {
                     contentType(ContentType.Application.Json)
                     authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("reason" to reason, "details" to details))
@@ -447,7 +459,7 @@ class ListenerRepository(
         val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/chats") {
+                client.get("${getBaseUrl(host)}/api/v1/chats") {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }.body()
             }
@@ -460,7 +472,7 @@ class ListenerRepository(
         val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
         return try {
             executeWithFallback { host ->
-                client.get("http://$host/api/v1/chats/$targetUserId/messages") {
+                client.get("${getBaseUrl(host)}/api/v1/chats/$targetUserId/messages") {
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }.body()
             }
@@ -473,7 +485,7 @@ class ListenerRepository(
         val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
         return try {
             executeWithFallback { host ->
-                client.post("http://$host/api/v1/chats/$targetUserId/messages") {
+                client.post("${getBaseUrl(host)}/api/v1/chats/$targetUserId/messages") {
                     contentType(ContentType.Application.Json)
                     header(HttpHeaders.Authorization, "Bearer $token")
                     setBody(SendMessageRequest(content))
