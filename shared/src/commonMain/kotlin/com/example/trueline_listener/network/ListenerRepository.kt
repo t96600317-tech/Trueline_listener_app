@@ -12,22 +12,22 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import com.example.trueline_listener.storage.SessionStorage
 import com.example.trueline_listener.storage.getSessionStorage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class ListenerRepository(
-    private var primaryHost: String = "api.truelineapp.in"
+    private var primaryHost: String = "api.truelineapp.in",
+    private val storage: SessionStorage = getSessionStorage()
 ) {
-    private val storage = getSessionStorage()
     private var authToken: String? = storage.getAuthToken()
-    private val candidateHosts = listOf(
-        "api.truelineapp.in",
-        "127.0.0.1:8080",
-        "localhost:8080",
-        "192.168.1.6:8080",
-        "10.0.2.2:8080"
-    ).distinct()
+
+    // A Listener must authenticate against the same backend that holds the
+    // approved KYC state. Falling through to a LAN/emulator server can create
+    // or resume a different account and makes an approved Listener appear new.
+    private val candidateHosts: List<String>
+        get() = listOf(primaryHost)
 
     private fun getBaseUrl(host: String): String {
         return if (host.startsWith("http://") || host.startsWith("https://")) {
@@ -65,9 +65,7 @@ class ListenerRepository(
     }
 
     fun getAuthToken(): String? {
-        if (authToken == null) {
-            authToken = storage.getAuthToken()
-        }
+        authToken = storage.getAuthToken()
         return authToken
     }
 
@@ -157,7 +155,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.post("${getBaseUrl(host)}/api/v1/calls/$sessionId/accept") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -170,7 +168,7 @@ class ListenerRepository(
             executeWithFallback { host ->
                 client.post("${getBaseUrl(host)}/api/v1/calls/$sessionId/end") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("reason" to reason))
                 }.body()
             }
@@ -187,7 +185,7 @@ class ListenerRepository(
             method = HttpMethod.Get,
             host = host,
             port = port,
-            path = "/api/v1/calls/$sessionId/events?token=$authToken"
+            path = "/api/v1/calls/$sessionId/events?token=${getAuthToken()}"
         ) {
             while (true) {
                 try {
@@ -358,7 +356,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/earnings") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -370,7 +368,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/home") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -382,7 +380,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/milestones") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -394,7 +392,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/score") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -406,7 +404,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/detailed-earnings") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -419,7 +417,7 @@ class ListenerRepository(
             executeWithFallback { host ->
                 client.post("${getBaseUrl(host)}/api/v1/listener/withdraw") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("amount_coins" to amountCoins, "upi_id" to upiId))
                 }.body()
             }
@@ -432,7 +430,7 @@ class ListenerRepository(
         return try {
             executeWithFallback { host ->
                 client.get("${getBaseUrl(host)}/api/v1/listener/blocked-users") {
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 }.body()
             }
         } catch (e: Exception) {
@@ -445,7 +443,7 @@ class ListenerRepository(
             executeWithFallback { host ->
                 client.post("${getBaseUrl(host)}/api/v1/listener/reports") {
                     contentType(ContentType.Application.Json)
-                    authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                     setBody(mapOf("reason" to reason, "details" to details))
                 }.body()
             }

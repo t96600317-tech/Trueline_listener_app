@@ -19,7 +19,7 @@ data class ApiError(
 @Serializable
 data class OtpRequest(
     val phone: String,
-    val role: String = "listener"
+    val role: String
 )
 
 @Serializable
@@ -34,7 +34,7 @@ data class OtpResponse(
 data class OtpVerifyRequest(
     val phone: String,
     val otp: String,
-    val role: String = "listener"
+    val role: String
 )
 
 @Serializable
