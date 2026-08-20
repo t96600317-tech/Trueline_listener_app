@@ -260,6 +260,7 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
     var isCheckingApprovalStatus by mutableStateOf(false)
         private set
 
+    // Called by manual button tap or pull-to-refresh — shows loading animation
     fun checkApprovalStatus() {
         if (isCheckingApprovalStatus) return
         isCheckingApprovalStatus = true
@@ -268,19 +269,39 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
                 val profileResp = repository.getMe()
                 if (profileResp.success && profileResp.data != null) {
                     val p = profileResp.data
-                    val step = p.onboarding_step.trim()
-                    val kyc = p.kyc_status.trim()
-
-                    if (kyc.lowercase() == "approved" || step.lowercase() in listOf("approved", "approved_welcome")) {
+                    val step = p.onboarding_step.trim().lowercase()
+                    val kyc = p.kyc_status.trim().lowercase()
+                    if (kyc == "approved" || step in listOf("approved", "approved_welcome")) {
                         isApprovedListener = true
                         _currentStep.value = OnboardingStep.APPROVED_WELCOME
                         onEnterPortal?.invoke()
                     }
                 }
             } catch (e: Exception) {
-                // Ignore transient network errors during background polling
+                // Ignore transient network errors
             } finally {
                 isCheckingApprovalStatus = false
+            }
+        }
+    }
+
+    // Called by background polling loop — completely silent, no state flag changes
+    fun pollApprovalStatusSilently() {
+        scope.launch {
+            try {
+                val profileResp = repository.getMe()
+                if (profileResp.success && profileResp.data != null) {
+                    val p = profileResp.data
+                    val step = p.onboarding_step.trim().lowercase()
+                    val kyc = p.kyc_status.trim().lowercase()
+                    if (kyc == "approved" || step in listOf("approved", "approved_welcome")) {
+                        isApprovedListener = true
+                        _currentStep.value = OnboardingStep.APPROVED_WELCOME
+                        onEnterPortal?.invoke()
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore transient network errors during silent background polling
             }
         }
     }

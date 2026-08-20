@@ -33,14 +33,15 @@ import kotlinx.coroutines.delay
 fun ApplicationPendingScreen(viewModel: OnboardingViewModel) {
     val scrollState = rememberScrollState()
 
-    // 10-second background polling
+    // Silent background polling every 10s — no animation, no visible state change
     LaunchedEffect(Unit) {
         while (true) {
-            viewModel.checkApprovalStatus()
             delay(10000)
+            viewModel.pollApprovalStatusSilently()
         }
     }
 
+    // Pull-to-refresh only shows spinner when manually triggered
     val pullRefreshState = rememberPullRefreshState(
         refreshing = viewModel.isCheckingApprovalStatus,
         onRefresh = { viewModel.checkApprovalStatus() }
@@ -77,33 +78,6 @@ fun ApplicationPendingScreen(viewModel: OnboardingViewModel) {
                         titleHighlight = "your application",
                         subtitle = "Usually approved within 24 hours. We'll notify you as soon as it's done."
                     )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    // Auto-Polling & Pull-to-Refresh Status Pill
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFE8F5E9),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA5D6A7))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = OnlineSuccess,
-                                modifier = Modifier.size(8.dp)
-                            ) {}
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (viewModel.isCheckingApprovalStatus) "Checking status..." else "Live checking every 10s · Pull down to reload",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF2E7D32)
-                            )
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(28.dp))
 
@@ -225,6 +199,7 @@ fun ApplicationPendingScreen(viewModel: OnboardingViewModel) {
                 }
             }
 
+            // Only shows spinner when manually triggered (pull-to-refresh or button)
             PullRefreshIndicator(
                 refreshing = viewModel.isCheckingApprovalStatus,
                 state = pullRefreshState,
