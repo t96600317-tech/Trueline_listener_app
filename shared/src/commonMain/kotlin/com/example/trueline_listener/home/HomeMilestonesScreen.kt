@@ -1,6 +1,5 @@
 package com.example.trueline_listener.home
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,10 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material.icons.rounded.WavingHand
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,209 +17,284 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.trueline_listener.network.MilestoneItem
 import com.example.trueline_listener.ui.theme.*
+
+data class TrainingLessonItem(
+    val number: Int,
+    val title: String,
+    val durationText: String,
+    val isCompleted: Boolean,
+    val isRequired: Boolean = false
+)
 
 @Composable
 fun HomeMilestonesScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
-    val data = viewModel.milestonesData
+
+    val lessons = listOf(
+        TrainingLessonItem(
+            number = 1,
+            title = "Your first call",
+            durationText = "Completed · 7 min",
+            isCompleted = true
+        ),
+        TrainingLessonItem(
+            number = 2,
+            title = "Safety and boundaries",
+            durationText = "Completed · 11 min",
+            isCompleted = true
+        ),
+        TrainingLessonItem(
+            number = 4,
+            title = "When a caller is in crisis",
+            durationText = "12 min · required",
+            isCompleted = false,
+            isRequired = true
+        ),
+        TrainingLessonItem(
+            number = 5,
+            title = "Ending a call kindly",
+            durationText = "8 min",
+            isCompleted = false
+        ),
+        TrainingLessonItem(
+            number = 6,
+            title = "Building repeat callers",
+            durationText = "9 min",
+            isCompleted = false
+        )
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFF8FAFB))
             .verticalScroll(scrollState)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Welcome Header
+        // 1. Header Section: Title & Subtitle
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Welcome, ${data.listener_name.ifBlank { "Listener" }}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.WavingHand,
-                        contentDescription = "Welcome",
-                        tint = Color(0xFFF59E0B),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Complete these steps to start earning. Bonuses are paid with your weekly payout.",
-                    fontSize = 13.sp,
-                    color = TextSecondary,
-                    lineHeight = 18.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Milestones List
-        data.milestones.forEachIndexed { index, milestone ->
-            MilestoneCard(index = index + 1, item = milestone)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Week-One Earnings Guarantee Banner
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFFE2F3F3))
-                .border(1.dp, Color(0xFFC3E4E4), RoundedCornerShape(18.dp))
-                .padding(16.dp)
+            horizontalArrangement = Arrangement.Start
         ) {
             Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.Security,
-                        contentDescription = "Guarantee",
-                        tint = Primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Week-one earnings guarantee",
-                        fontSize = 14.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Stay online 3 hours a day for 7 days and you earn at least ₹1,500 — even if calls are slow. We take the risk, not you.",
-                    fontSize = 12.5.sp,
-                    color = TextPrimary.copy(alpha = 0.85f),
-                    lineHeight = 17.sp
+                    text = "Listen better, earn more",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Six short lessons. Ten minutes each.",
+                    fontSize = 13.5.sp,
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Switch to Live Dashboard Button
-        OutlinedButton(
-            onClick = { viewModel.toggleMilestonesView(false) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.5.dp, Primary)
+        // 2. Hero Active Lesson Card (Dark Forest Green)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = Color(0xFF1E4D43) // Dark Forest Teal
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                // Top Label
+                Text(
+                    text = "CONTINUE · LESSON 3",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7DD3C7),
+                    letterSpacing = 0.8.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Lesson Title
+                Text(
+                    text = "Holding silence without filling it",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    lineHeight = 28.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Progress Bar (Custom Track & Amber Fill)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF336359))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.44f)
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(Color(0xFFE58B58))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Bottom Row: Duration & Resume Button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "4 of 9 minutes",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color(0xFFE58B58),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .clickable { }
+                    ) {
+                        Text(
+                            text = "Resume",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E4D43),
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // 3. Grouped Lessons List Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column {
+                lessons.forEachIndexed { index, lesson ->
+                    LessonRowItem(lesson = lesson)
+                    if (index < lessons.lastIndex) {
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // 4. Bottom Notice Banner (Warm Cream/Peach)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFFDF0E7),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF7D7C4))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
                 Text(
-                    text = "Go to Live Dashboard",
-                    fontSize = 15.sp,
+                    text = "Finish all six by 31 Aug",
+                    fontSize = 13.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Primary
+                    color = Color(0xFF7C4124)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Rounded.ArrowForward,
-                    contentDescription = "Go",
-                    tint = Primary,
-                    modifier = Modifier.size(18.dp)
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "Trained listeners hold a 4.8+ rating twice as often.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF9A644D),
+                    lineHeight = 16.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
     }
 }
 
 @Composable
-private fun MilestoneCard(index: Int, item: MilestoneItem) {
-    val isCompleted = item.is_completed
-
-    Box(
+private fun LessonRowItem(lesson: TrainingLessonItem) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .border(1.2.dp, if (isCompleted) Color(0xFFD4EDE8) else BorderSubtle, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+            .clickable { }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Step Number or Checkmark Circle
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            isCompleted -> OnlineSuccess
-                            index == 2 -> Accent
-                            else -> Color(0xFFE2E8F0)
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+        // Icon Circle (Checkmark for completed, Number for upcoming)
+        if (lesson.isCompleted) {
+            Surface(
+                modifier = Modifier.size(34.dp),
+                shape = CircleShape,
+                color = Color(0xFF1E4D43)
             ) {
-                if (isCompleted) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = "Completed",
                         tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                } else {
-                    Text(
-                        text = "$index",
-                        color = if (index == 2) Color.White else TextMuted,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            // Milestone Details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.title,
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = item.subtitle,
-                    fontSize = 12.sp,
-                    color = if (isCompleted) TextMuted else TextSecondary
-                )
+        } else {
+            Surface(
+                modifier = Modifier.size(34.dp),
+                shape = CircleShape,
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1))
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "${lesson.number}",
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
             }
+        }
 
-            Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-            // Bonus Amount
+        // Lesson Title & Duration / Status
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "+₹${item.reward_coins.toInt()}",
-                fontSize = 15.sp,
+                text = lesson.title,
+                fontSize = 14.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isCompleted) OnlineSuccess else Accent
+                color = Color(0xFF0F172A)
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = lesson.durationText,
+                fontSize = 12.sp,
+                color = Color(0xFF94A3B8),
+                fontWeight = FontWeight.Medium
             )
         }
     }

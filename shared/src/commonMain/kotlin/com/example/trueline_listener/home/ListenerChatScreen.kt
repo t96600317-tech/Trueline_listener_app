@@ -1,516 +1,497 @@
 package com.example.trueline_listener.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.trueline_listener.network.ChatConversationData
-import com.example.trueline_listener.ui.TrueLineWaveformLoader
-import com.example.trueline_listener.ui.theme.*
+import kotlinx.coroutines.delay
+
+data class OnlineCallerAvatar(
+    val userId: String,
+    val userName: String,
+    val avatarText: String,
+    val labelText: String
+)
+
+data class ChatDisplayItem(
+    val userId: String,
+    val avatarText: String,
+    val callerTitle: String,
+    val lastMessage: String,
+    val timestamp: String,
+    val unreadCount: Int = 0,
+    val isRegular: Boolean = false,
+    val filterType: ChatFilter
+)
 
 @Composable
 fun ListenerChatScreen(viewModel: MainPortalViewModel) {
-    if (viewModel.activeChatUserId != null) {
-        ListenerIndividualChatScreen(viewModel)
-    } else {
-        ListenerChatListScreen(viewModel)
-    }
-}
+    val scrollState = rememberScrollState()
+    val onlineScrollState = rememberScrollState()
+    val filterScrollState = rememberScrollState()
+    val currentFilter = viewModel.selectedChatFilter
 
-@Composable
-fun ListenerChatListScreen(viewModel: MainPortalViewModel) {
-    var searchQuery by remember { mutableStateOf("") }
-
+    // Periodically refresh conversation list in background
     LaunchedEffect(Unit) {
         viewModel.fetchConversations()
-    }
-
-    val filteredConversations = remember(viewModel.conversations, searchQuery) {
-        if (searchQuery.isBlank()) viewModel.conversations
-        else viewModel.conversations.filter {
-            val name = if (it.user_name.isNotBlank()) it.user_name else "Caller #${it.user_id.take(6).uppercase()}"
-            name.contains(searchQuery, ignoreCase = true) || it.last_message.contains(searchQuery, ignoreCase = true)
+        while (true) {
+            delay(8000)
+            viewModel.fetchConversations()
         }
     }
 
-    val unreadCount = viewModel.conversations.sumOf { it.unread_count }
+    val onlineCallers = listOf(
+        OnlineCallerAvatar("user_8f21", "Caller 8f21", "8F", "8f"),
+        OnlineCallerAvatar("user_2c07", "Caller 2c07", "2C", "2c"),
+        OnlineCallerAvatar("user_6b93", "Caller 6b93", "6B", "6b"),
+        OnlineCallerAvatar("user_d1f8", "Caller d1f8", "D1", "d1"),
+        OnlineCallerAvatar("user_7e20", "Caller 7e20", "7E", "7e")
+    )
+
+    // Build chat items from server conversations or default mock conversations
+    val serverChats = viewModel.conversations.map { conv ->
+        val name = conv.user_name.ifBlank { "Caller ${conv.user_id.takeLast(4)}" }
+        ChatDisplayItem(
+            userId = conv.user_id,
+            avatarText = name.take(2).uppercase().ifBlank { "CL" },
+            callerTitle = name,
+            lastMessage = conv.last_message.ifBlank { "Tap to chat" },
+            timestamp = conv.last_message_time.ifBlank { "Just now" },
+            unreadCount = conv.unread_count,
+            isRegular = true,
+            filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else ChatFilter.ALL
+        )
+    }
+
+    val fallbackChats = listOf(
+        ChatDisplayItem(
+            userId = "user_8f21",
+            avatarText = "8F",
+            callerTitle = "caller 8f21 · regular",
+            lastMessage = "Voice note · 0:14",
+            timestamp = "9:14 PM",
+            unreadCount = 2,
+            isRegular = true,
+            filterType = ChatFilter.UNREAD
+        ),
+        ChatDisplayItem(
+            userId = "user_2c07",
+            avatarText = "2C",
+            callerTitle = "caller 2c07",
+            lastMessage = "thank you for today, felt lighter",
+            timestamp = "9:12 PM",
+            unreadCount = 0,
+            filterType = ChatFilter.ALL
+        ),
+        ChatDisplayItem(
+            userId = "user_6b93",
+            avatarText = "6B",
+            callerTitle = "caller 6b93",
+            lastMessage = "call me tomorrow same time?",
+            timestamp = "9:11 PM",
+            unreadCount = 1,
+            filterType = ChatFilter.NEEDS_REPLY
+        ),
+        ChatDisplayItem(
+            userId = "user_d1f8",
+            avatarText = "D1",
+            callerTitle = "caller d1f8 · regular",
+            lastMessage = "Voice note · 0:38",
+            timestamp = "8:52 PM",
+            unreadCount = 0,
+            isRegular = true,
+            filterType = ChatFilter.REGULARS
+        ),
+        ChatDisplayItem(
+            userId = "user_4a55",
+            avatarText = "4A",
+            callerTitle = "caller 4a55",
+            lastMessage = "sorry i missed the call",
+            timestamp = "7:20 PM",
+            unreadCount = 0,
+            filterType = ChatFilter.ALL
+        ),
+        ChatDisplayItem(
+            userId = "user_7e20",
+            avatarText = "7E",
+            callerTitle = "caller 7e20",
+            lastMessage = "ok didi, good night",
+            timestamp = "6:15 PM",
+            unreadCount = 0,
+            filterType = ChatFilter.ALL
+        )
+    )
+
+    val combinedChats = if (serverChats.isNotEmpty()) serverChats else fallbackChats
+
+    // Apply Search Query filter
+    val searchFiltered = if (viewModel.chatSearchQuery.isBlank()) {
+        combinedChats
+    } else {
+        val query = viewModel.chatSearchQuery.lowercase()
+        combinedChats.filter {
+            it.callerTitle.lowercase().contains(query) ||
+            it.lastMessage.lowercase().contains(query)
+        }
+    }
+
+    // Apply Category Tab filter
+    val filteredChats = when (currentFilter) {
+        ChatFilter.ALL -> searchFiltered
+        ChatFilter.UNREAD -> searchFiltered.filter { it.unreadCount > 0 }
+        ChatFilter.REGULARS -> searchFiltered.filter { it.isRegular }
+        ChatFilter.NEEDS_REPLY -> searchFiltered.filter { it.unreadCount > 0 || it.filterType == ChatFilter.NEEDS_REPLY }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Light)
+            .background(Color(0xFFF8FAFB))
+            .verticalScroll(scrollState)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // --- HEADER ---
-        Surface(
-            color = Color.White,
-            shadowElevation = 1.dp,
-            modifier = Modifier.fillMaxWidth()
+        // 1. Header: All chats Title & Add (+) Action Button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
+            Text(
+                text = "All chats",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
+
+            // Add (+) action button
+            Surface(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                        // Open chat with first caller or new contact
+                        viewModel.openChat("user_8f21", "Caller 8f21")
+                    },
+                shape = CircleShape,
+                color = Color(0xFF134E4A)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "New Chat",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 2. Search Bar
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Messages",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Dark
-                        )
-                        if (unreadCount > 0) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Accent,
-                                modifier = Modifier.padding(top = 2.dp)
-                            ) {
-                                Text(
-                                    text = "$unreadCount new",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Dark,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Security Badge
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Primary.copy(alpha = 0.08f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Shield,
-                                contentDescription = null,
-                                tint = Primary,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "100% Anonymous",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Primary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search messages...", color = TextMuted, fontSize = 14.sp) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = TextMuted,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary.copy(alpha = 0.5f),
-                        unfocusedBorderColor = BorderSubtle,
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
-                        cursorColor = Primary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = "Search",
+                    tint = Color(0xFF94A3B8),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (viewModel.chatSearchQuery.isBlank()) "Search chats" else viewModel.chatSearchQuery,
+                    fontSize = 14.sp,
+                    color = if (viewModel.chatSearchQuery.isBlank()) Color(0xFF94A3B8) else Color(0xFF0F172A),
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
 
-        // --- CONVERSATION LIST ---
-        if (viewModel.isChatListLoading && viewModel.conversations.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                TrueLineWaveformLoader(size = 40.dp)
-            }
-        } else if (filteredConversations.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 32.dp),
-                contentAlignment = Alignment.Center
-            ) {
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 3. ONLINE NOW Section Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = "• ONLINE NOW",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F766E),
+                letterSpacing = 0.8.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ONLINE NOW Avatars Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(onlineScrollState),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            onlineCallers.forEach { caller ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier.clickable {
+                        viewModel.openChat(caller.userId, caller.userName)
+                    }
                 ) {
-                    Surface(
-                        modifier = Modifier.size(76.dp),
-                        shape = CircleShape,
-                        color = Accent.copy(alpha = 0.15f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Filled.ChatBubbleOutline,
-                                contentDescription = null,
-                                tint = Dark,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No matching messages" else "No Messages Yet",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Dark
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = if (searchQuery.isNotBlank())
-                            "Try searching with another caller keyword."
-                        else
-                            "Incoming chats from users will appear here. Keep your status online to receive chats and calls.",
-                        fontSize = 13.5.sp,
-                        color = TextMuted,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        lineHeight = 19.sp
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(filteredConversations) { chat ->
-                    val displayName = if (chat.user_name.isNotBlank()) chat.user_name else "User #${chat.user_id.take(6).uppercase()}"
-                    Surface(
-                        onClick = { viewModel.openChat(chat.user_id, displayName) },
-                        color = Color.Transparent
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Primary.copy(alpha = 0.12f),
-                                modifier = Modifier.size(50.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = displayName.take(1).uppercase(),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 19.sp,
-                                        color = Primary
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = displayName,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Dark
-                                    )
-                                    if (chat.last_message_time.isNotBlank()) {
-                                        Text(
-                                            text = if (chat.last_message_time.length >= 16) chat.last_message_time.substring(11, 16) else "",
-                                            fontSize = 11.sp,
-                                            color = if (chat.unread_count > 0) Primary else TextMuted,
-                                            fontWeight = if (chat.unread_count > 0) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = if (chat.last_message.isNotBlank()) chat.last_message else "New conversation...",
-                                        fontSize = 13.sp,
-                                        color = if (chat.unread_count > 0) Dark else TextMuted,
-                                        fontWeight = if (chat.unread_count > 0) FontWeight.SemiBold else FontWeight.Normal,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
-                                    )
-
-                                    if (chat.unread_count > 0) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = Accent,
-                                            modifier = Modifier.size(20.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = chat.unread_count.toString(),
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Dark
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        thickness = 0.6.dp,
-                        color = Color(0xFFE2E8F0)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ListenerIndividualChatScreen(viewModel: MainPortalViewModel) {
-    var textState by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-    val userId = viewModel.activeChatUserId ?: ""
-    val userName = viewModel.activeChatUserName
-
-    LaunchedEffect(viewModel.currentChatMessages.size) {
-        if (viewModel.currentChatMessages.isNotEmpty()) {
-            listState.animateScrollToItem(viewModel.currentChatMessages.size - 1)
-        }
-    }
-
-    Scaffold(
-        containerColor = Light,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box {
                         Surface(
-                            modifier = Modifier.size(38.dp),
+                            modifier = Modifier.size(46.dp),
                             shape = CircleShape,
-                            color = Primary.copy(alpha = 0.12f)
+                            color = Color(0xFFE2ECE9)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = userName.take(1).uppercase(),
+                                    text = caller.avatarText,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp,
-                                    color = Primary
+                                    color = Color(0xFF334155)
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = userName,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Dark
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(modifier = Modifier.size(6.dp), shape = CircleShape, color = OnlineSuccess) {}
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "User (Anonymous)", fontSize = 11.5.sp, color = TextMuted)
-                            }
-                        }
+                        // Green Online Dot Badge
+                        Surface(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .align(Alignment.BottomEnd),
+                            shape = CircleShape,
+                            color = Color(0xFF0F766E),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
+                        ) {}
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { viewModel.closeChat() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Dark
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        },
-        bottomBar = {
-            Surface(
-                shadowElevation = 8.dp,
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = textState,
-                        onValueChange = { textState = it },
-                        placeholder = { Text("Reply to user...", color = TextMuted, fontSize = 14.sp) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 46.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF1F5F9),
-                            unfocusedContainerColor = Color(0xFFF1F5F9),
-                            disabledContainerColor = Color(0xFFF1F5F9),
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            cursorColor = Primary
-                        ),
-                        shape = RoundedCornerShape(24.dp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = caller.labelText,
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
                     )
+                }
+            }
+        }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-                    IconButton(
-                        onClick = {
-                            if (textState.isNotBlank()) {
-                                viewModel.sendChatMessage(textState.trim())
-                                textState = ""
-                            }
-                        },
-                        modifier = Modifier.size(46.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = if (textState.isNotBlank()) Accent else Accent.copy(alpha = 0.35f)
-                        )
+        // 4. Filter Chips Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(filterScrollState),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ChatFilterPill(
+                title = "All",
+                isSelected = currentFilter == ChatFilter.ALL,
+                onClick = { viewModel.selectChatFilter(ChatFilter.ALL) }
+            )
+            ChatFilterPill(
+                title = "Unread",
+                isSelected = currentFilter == ChatFilter.UNREAD,
+                onClick = { viewModel.selectChatFilter(ChatFilter.UNREAD) }
+            )
+            ChatFilterPill(
+                title = "Regulars",
+                isSelected = currentFilter == ChatFilter.REGULARS,
+                onClick = { viewModel.selectChatFilter(ChatFilter.REGULARS) }
+            )
+            ChatFilterPill(
+                title = "Needs reply",
+                isSelected = currentFilter == ChatFilter.NEEDS_REPLY,
+                onClick = { viewModel.selectChatFilter(ChatFilter.NEEDS_REPLY) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // 5. Chat List Container Card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column {
+                if (filteredChats.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = Dark,
-                            modifier = Modifier.size(20.dp)
+                        Text(
+                            text = "No messages in this category",
+                            fontSize = 13.sp,
+                            color = Color(0xFF64748B)
                         )
+                    }
+                } else {
+                    filteredChats.forEachIndexed { index, item ->
+                        ChatRowItem(
+                            item = item,
+                            onClick = {
+                                viewModel.openChat(item.userId, item.callerTitle)
+                            }
+                        )
+                        if (index < filteredChats.lastIndex) {
+                            HorizontalDivider(color = Color(0xFFF1F5F9))
+                        }
                     }
                 }
             }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 6. Footer Privacy Subtext
+        Text(
+            text = "Chats stay inside TrueLine. Numbers are never shared.",
+            fontSize = 12.sp,
+            color = Color(0xFF94A3B8),
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+    }
+}
+
+@Composable
+private fun ChatFilterPill(
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) Color(0xFF134E4A) else Color.White,
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Text(
+            text = title,
+            fontSize = 13.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color.White else Color(0xFF334155),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun ChatRowItem(
+    item: ChatDisplayItem,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
         ) {
-            // Safety Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            // Avatar Circle
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape,
+                color = Color(0xFFE2ECE9)
             ) {
-                Icon(Icons.Filled.Lock, contentDescription = null, tint = TextMuted, modifier = Modifier.size(12.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Chats are end-to-end encrypted and anonymous", fontSize = 11.sp, color = TextMuted)
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = item.avatarText,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF334155)
+                    )
+                }
             }
 
-            if (viewModel.isChatMessagesLoading && viewModel.currentChatMessages.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    TrueLineWaveformLoader(size = 38.dp)
-                }
-            } else if (viewModel.currentChatMessages.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No messages yet with $userName", fontWeight = FontWeight.Bold, color = Dark, fontSize = 16.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Send a message to start helping them.", color = TextMuted, fontSize = 13.sp)
-                    }
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = item.callerTitle,
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = item.lastMessage,
+                    fontSize = 12.5.sp,
+                    color = Color(0xFF94A3B8),
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Right side: Timestamp & Unread Badge
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = item.timestamp,
+                fontSize = 11.5.sp,
+                color = Color(0xFF94A3B8),
+                fontWeight = FontWeight.Medium
+            )
+
+            if (item.unreadCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF134E4A)
                 ) {
-                    items(viewModel.currentChatMessages) { msg ->
-                        val isFromListener = msg.sender_type == "listener" || msg.sender_type == "partner"
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = if (isFromListener) Alignment.CenterEnd else Alignment.CenterStart
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(
-                                    topStart = 16.dp,
-                                    topEnd = 16.dp,
-                                    bottomStart = if (isFromListener) 16.dp else 4.dp,
-                                    bottomEnd = if (isFromListener) 4.dp else 16.dp
-                                ),
-                                color = if (isFromListener) Primary else Color.White,
-                                border = if (isFromListener) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                shadowElevation = 1.dp,
-                                modifier = Modifier.widthIn(max = 280.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                    Text(
-                                        text = msg.content,
-                                        color = if (isFromListener) Color.White else Dark,
-                                        fontSize = 14.sp,
-                                        lineHeight = 20.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = if (msg.created_at.length >= 16) msg.created_at.substring(11, 16) else "",
-                                        color = if (isFromListener) Color.White.copy(alpha = 0.7f) else Color.Gray,
-                                        fontSize = 10.sp,
-                                        modifier = Modifier.align(Alignment.End)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        text = "${item.unreadCount}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
                 }
             }
         }

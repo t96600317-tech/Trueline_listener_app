@@ -17,12 +17,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MonetizationOn
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.trueline_listener.ui.TrueLineLogoBadge
+import com.example.trueline_listener.ui.WalletIcon
 import com.example.trueline_listener.ui.theme.*
 
 @Composable
@@ -31,10 +34,13 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFFF8FAFB)
     ) {
-        Scaffold(
-            topBar = {
-                PortalTopHeader(viewModel = viewModel)
-            },
+        if (viewModel.activeChatUserId != null) {
+            ListenerIndividualChatScreen(viewModel = viewModel)
+        } else {
+            Scaffold(
+                topBar = {
+                    PortalTopHeader(viewModel = viewModel)
+                },
             bottomBar = {
                 val unreadCount = viewModel.conversations.sumOf { it.unread_count }
                 PortalBottomNavigation(
@@ -70,6 +76,9 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                     PortalSubScreen.SUPPORT_INFO -> {
                         SupportInfoModal(viewModel = viewModel)
                     }
+                    PortalSubScreen.TRANSACTIONS -> {
+                        TransactionsScreen(viewModel = viewModel)
+                    }
                     PortalSubScreen.NONE -> {
                         // Main Tabs
                         when (viewModel.currentTab) {
@@ -79,6 +88,9 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                                 } else {
                                     HomeDashboardScreen(viewModel = viewModel)
                                 }
+                            }
+                            PortalTab.CALLS -> {
+                                CallLogScreen(viewModel = viewModel)
                             }
                             PortalTab.CHAT -> {
                                 ListenerChatScreen(viewModel = viewModel)
@@ -91,6 +103,11 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                             }
                         }
                     }
+                }
+
+                // Go Offline Confirmation Modal
+                if (viewModel.showGoOfflineModal) {
+                    GoOfflineConfirmModal(viewModel = viewModel)
                 }
 
                 // Toast Notifications
@@ -123,6 +140,7 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
         }
     }
 }
+}
 
 @Composable
 private fun PortalTopHeader(viewModel: MainPortalViewModel) {
@@ -130,67 +148,117 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF8FAFB))
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // TrueLine LISTENER Brand Header
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TrueLineLogoBadge(size = 32.dp, isDarkTheme = false)
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = "True",
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF111827)
-            )
-            Text(
-                text = "Line",
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Light,
-                color = Color(0xFF111827)
-            )
-
-            Spacer(modifier = Modifier.width(6.dp))
-
+        // Left: Back arrow on Profile tab or Milestones/Lessons page, or Profile Avatar on other tabs
+        if (viewModel.currentTab == PortalTab.PROFILE) {
             Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Accent.copy(alpha = 0.15f),
-                modifier = Modifier.padding(top = 1.dp)
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .clickable { viewModel.selectTab(PortalTab.HOME) },
+                shape = CircleShape,
+                color = Color(0xFFE2E8F0)
             ) {
-                Text(
-                    text = "PARTNER",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFB45309),
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Back to Home",
+                        tint = Color(0xFF475569),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        } else if (viewModel.currentTab == PortalTab.HOME && viewModel.showMilestoneChecklist) {
+            Surface(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .clickable { viewModel.hideMilestones() },
+                shape = CircleShape,
+                color = Color(0xFFE2E8F0)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Back to Home Dashboard",
+                        tint = Color(0xFF475569),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        } else {
+            Surface(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .clickable { viewModel.selectTab(PortalTab.PROFILE) },
+                shape = CircleShape,
+                color = Color(0xFFE2E8F0)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "PR",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF475569)
+                    )
+                }
             }
         }
 
-        // Live Earning Rate Pill
+        // Center: TrueLine listener logo & title
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TrueLineLogoBadge(size = 26.dp, isDarkTheme = false)
+            Spacer(modifier = Modifier.width(6.dp))
+
+            Text(
+                text = "True",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E293B)
+            )
+            Text(
+                text = "Line",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF1E293B)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "listener",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF64748B),
+                modifier = Modifier.padding(top = 3.dp)
+            )
+        }
+
+        // Right: Notification Bell Button with alert dot
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = Primary.copy(alpha = 0.09f),
-            modifier = Modifier.padding(top = 1.dp)
+            modifier = Modifier.size(38.dp),
+            shape = CircleShape,
+            color = Color.White,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = if (viewModel.isOnline) OnlineSuccess else Color.Gray,
-                    modifier = Modifier.size(7.dp)
-                ) {}
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (viewModel.isOnline) "₹4.5/min Live" else "Offline",
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (viewModel.isOnline) Color(0xFF15803D) else Color.Gray
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Notifications,
+                    contentDescription = "Notifications",
+                    tint = Color(0xFF334155),
+                    modifier = Modifier.size(20.dp)
+                )
+
+                // Orange Alert Badge Dot
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF97316))
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-6).dp, y = 6.dp)
                 )
             }
         }
@@ -206,12 +274,13 @@ fun PortalBottomNavigation(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
-        shadowElevation = 8.dp
+        shadowElevation = 8.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 8.dp),
+                .padding(vertical = 8.dp, horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -223,6 +292,14 @@ fun PortalBottomNavigation(
                 onClick = { onTabSelected(PortalTab.HOME) }
             )
 
+            // Calls Tab
+            BottomNavItem(
+                title = "Calls",
+                icon = Icons.Rounded.Call,
+                isSelected = currentTab == PortalTab.CALLS,
+                onClick = { onTabSelected(PortalTab.CALLS) }
+            )
+
             // Chat Tab
             BottomNavItem(
                 title = "Chat",
@@ -232,20 +309,12 @@ fun PortalBottomNavigation(
                 onClick = { onTabSelected(PortalTab.CHAT) }
             )
 
-            // Earnings Tab
+            // Wallet Tab
             BottomNavItem(
-                title = "Earnings",
-                icon = Icons.Rounded.MonetizationOn,
+                title = "Wallet",
+                customIcon = { WalletIcon(modifier = Modifier.size(24.dp), isSelected = currentTab == PortalTab.EARNINGS) },
                 isSelected = currentTab == PortalTab.EARNINGS,
                 onClick = { onTabSelected(PortalTab.EARNINGS) }
-            )
-
-            // Profile Tab
-            BottomNavItem(
-                title = "Profile",
-                icon = Icons.Rounded.Person,
-                isSelected = currentTab == PortalTab.PROFILE,
-                onClick = { onTabSelected(PortalTab.PROFILE) }
             )
         }
     }
@@ -254,25 +323,33 @@ fun PortalBottomNavigation(
 @Composable
 private fun BottomNavItem(
     title: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    customIcon: (@Composable () -> Unit)? = null,
     isSelected: Boolean,
     badgeCount: Int = 0,
     onClick: () -> Unit
 ) {
+    val activeColor = Color(0xFF134E4A)
+    val inactiveColor = Color(0xFF94A3B8)
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(24.dp),
-                tint = if (isSelected) Primary else TextMuted
-            )
+            if (customIcon != null) {
+                customIcon()
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (isSelected) activeColor else inactiveColor
+                )
+            }
             if (badgeCount > 0) {
                 Surface(
                     shape = CircleShape,
@@ -286,7 +363,7 @@ private fun BottomNavItem(
                             text = if (badgeCount > 9) "9+" else badgeCount.toString(),
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Dark
+                            color = Color.White
                         )
                     }
                 }
@@ -297,7 +374,7 @@ private fun BottomNavItem(
             text = title,
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Primary else TextMuted
+            color = if (isSelected) activeColor else inactiveColor
         )
     }
 }

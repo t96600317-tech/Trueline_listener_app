@@ -17,344 +17,504 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CardGiftcard
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Star
-import com.example.trueline_listener.network.RecentCallItem
 import com.example.trueline_listener.ui.theme.*
 
 @Composable
 fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
-    val data = viewModel.dashboardData
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFF8FAFB))
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Dark Teal Stats Hero Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF235356))
-                .padding(20.dp)
-        ) {
-            Column {
-                Text(
-                    text = "Today's earnings",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "₹${data.today_earnings_coins.toInt()}",
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    letterSpacing = (-0.5).sp
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${data.today_minutes} minutes of listening · ${data.today_calls} calls",
-                    fontSize = 12.5.sp,
-                    color = Color.White.copy(alpha = 0.75f)
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // 3 Mini Stat Cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // This week
-                    StatSubCard(
-                        modifier = Modifier.weight(1f),
-                        value = "₹${data.this_week_earnings_coins.toInt()}",
-                        label = "This week"
-                    )
-                    // Rating
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .padding(vertical = 10.dp, horizontal = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "${data.rating_avg}",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.Star,
-                                    contentDescription = "Rating",
-                                    modifier = Modifier.size(14.dp),
-                                    tint = Color(0xFFFBBF24)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Rating",
-                                fontSize = 10.5.sp,
-                                color = Color.White.copy(alpha = 0.75f)
-                            )
-                        }
-                    }
-                    // Total Calls
-                    StatSubCard(
-                        modifier = Modifier.weight(1f),
-                        value = "${data.total_calls_count}",
-                        label = "Calls"
-                    )
-                }
-            }
-        }
+        // 1. WALLET BALANCE Card
+        WalletBalanceCard(
+            balanceStr = "₹1,248.60",
+            weekStr = "WEEK 3",
+            payoutSubtext = "Weekly payout to UPI • Mon 24 Aug",
+            onSeeDetailsClick = { viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS) }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Availability Switch Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White)
-                .border(1.2.dp, BorderSubtle, RoundedCornerShape(20.dp))
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "I'm available",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(if (viewModel.isOnline) OnlineSuccess else TextMuted)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (viewModel.isOnline) "Online — receiving calls" else "Offline — not receiving calls",
-                            fontSize = 12.5.sp,
-                            color = if (viewModel.isOnline) OnlineSuccess else TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+        // 2. Availability Card
+        AvailabilityCard(
+            mode = viewModel.availabilityMode,
+            onModeSelected = { newMode ->
+                if (newMode == AvailabilityMode.OFFLINE && viewModel.availabilityMode != AvailabilityMode.OFFLINE) {
+                    viewModel.openGoOfflineModal()
+                } else {
+                    viewModel.updateAvailabilityMode(newMode)
                 }
-
-                Switch(
-                    checked = viewModel.isOnline,
-                    onCheckedChange = { viewModel.toggleAvailability() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = OnlineSuccess,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = Color(0xFFCBD5E1)
-                    )
-                )
             }
-        }
+        )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Recent Calls Section Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "RECENT CALLS",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextMuted,
-                letterSpacing = 0.8.sp
-            )
+        // 3. First-week guarantee Card
+        FirstWeekGuaranteeCard(
+            completedCalls = 14,
+            targetCalls = 20,
+            onClick = { viewModel.showMilestones() }
+        )
 
-            Text(
-                text = "View Checklist",
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Primary,
-                modifier = Modifier.clickable { viewModel.toggleMilestonesView(true) }
-            )
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(10.dp))
+        // 4. Daily streak Card
+        DailyStreakCard(
+            dayNumber = 3,
+            completedDays = 4,
+            totalDays = 5,
+            rewardText = "Go online 2 hours today for +₹40"
+        )
 
-        // Recent Calls List
-        if (data.recent_calls.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No calls yet. Go online to receive calls!",
-                    fontSize = 13.sp,
-                    color = TextSecondary
-                )
-            }
-        } else {
-            data.recent_calls.forEach { call ->
-                RecentCallCard(item = call)
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 5. Performance / Stats Card
+        PerformanceStatsCard(
+            selectedTab = viewModel.selectedStatsTab,
+            onTabSelected = { viewModel.selectStatsTab(it) }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun StatSubCard(
+private fun WalletBalanceCard(
+    balanceStr: String,
+    weekStr: String,
+    payoutSubtext: String,
+    onSeeDetailsClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0xFF134E4A), // Dark teal background from design mockup
+        shadowElevation = 2.dp
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header Row: WALLET BALANCE + WEEK 3 Pill
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "WALLET BALANCE",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94A3B8),
+                    letterSpacing = 0.8.sp
+                )
+
+                // Pill on top right
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFF3F3B2A)
+                ) {
+                    Text(
+                        text = weekStr,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFF59E0B),
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Main Balance Amount
+            Text(
+                text = balanceStr,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                letterSpacing = (-0.5).sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Subtext: Weekly payout date
+            Text(
+                text = payoutSubtext,
+                fontSize = 12.5.sp,
+                color = Color(0xFF94A3B8),
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Bottom Link: See payout details ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSeeDetailsClick() },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "See payout details",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Text(
+                    text = "→",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFF97316) // Warm orange accent arrow
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvailabilityCard(
+    mode: AvailabilityMode,
+    onModeSelected: (AvailabilityMode) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Header Row: Availability title + Green time indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Availability",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF0F766E))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "3h 12m today",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF334155)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Subtext
+            Text(
+                text = if (mode == AvailabilityMode.OFFLINE) "You're offline right now" else "You're taking calls now",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 3-Way Segmented Toggle Control: Offline | Busy | Online
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFFF1F5F9)
+            ) {
+                Row(
+                    modifier = Modifier.padding(4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Offline
+                    SegmentItem(
+                        modifier = Modifier.weight(1f),
+                        title = "Offline",
+                        isSelected = mode == AvailabilityMode.OFFLINE,
+                        onClick = { onModeSelected(AvailabilityMode.OFFLINE) }
+                    )
+
+                    // Busy
+                    SegmentItem(
+                        modifier = Modifier.weight(1f),
+                        title = "Busy",
+                        isSelected = mode == AvailabilityMode.BUSY,
+                        onClick = { onModeSelected(AvailabilityMode.BUSY) }
+                    )
+
+                    // Online
+                    SegmentItem(
+                        modifier = Modifier.weight(1f),
+                        title = "Online",
+                        isSelected = mode == AvailabilityMode.ONLINE,
+                        onClick = { onModeSelected(AvailabilityMode.ONLINE) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SegmentItem(
     modifier: Modifier,
-    value: String,
-    label: String
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.12f))
-            .padding(vertical = 10.dp, horizontal = 12.dp),
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (isSelected) Color(0xFF134E4A) else Color.Transparent)
+            .clickable { onClick() }
+            .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = title,
+            fontSize = 13.5.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color.White else Color(0xFF64748B)
+        )
+    }
+}
+
+@Composable
+private fun FirstWeekGuaranteeCard(
+    completedCalls: Int,
+    targetCalls: Int,
+    onClick: (() -> Unit)? = null
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "First-week guarantee",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+
+                Text(
+                    text = "$completedCalls/$targetCalls calls",
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF134E4A)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Progress bar
+            val progressFraction = (completedCalls.toFloat() / targetCalls.toFloat()).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE2E8F0))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progressFraction)
+                        .clip(CircleShape)
+                        .background(Color(0xFF134E4A))
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyStreakCard(
+    dayNumber: Int,
+    completedDays: Int,
+    totalDays: Int,
+    rewardText: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFFFFF7ED), // Soft amber/beige container background
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFED7AA))
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Daily streak • Day $dayNumber",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF9A3412)
+                )
+
+                // 5 Dots indicator
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    repeat(totalDays) { index ->
+                        val isFilled = index < completedDays
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(if (isFilled) Color(0xFFEA580C) else Color(0xFFFED7AA))
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text = value,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = label,
-                fontSize = 10.5.sp,
-                color = Color.White.copy(alpha = 0.75f)
+                text = rewardText,
+                fontSize = 12.5.sp,
+                color = Color(0xFFC2410C),
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
 @Composable
-private fun RecentCallCard(item: RecentCallItem) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .border(1.2.dp, BorderSubtle, RoundedCornerShape(16.dp))
-            .padding(14.dp)
+private fun PerformanceStatsCard(
+    selectedTab: PerformanceStatsTab,
+    onTabSelected: (PerformanceStatsTab) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar Circle
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF6DA2C2)),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Tab row: Today | Yesterday | This week
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.caller_initial.ifBlank { item.caller_name.take(1) },
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                StatTabItem(
+                    title = "Today",
+                    isSelected = selectedTab == PerformanceStatsTab.TODAY,
+                    onClick = { onTabSelected(PerformanceStatsTab.TODAY) }
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                StatTabItem(
+                    title = "Yesterday",
+                    isSelected = selectedTab == PerformanceStatsTab.YESTERDAY,
+                    onClick = { onTabSelected(PerformanceStatsTab.YESTERDAY) }
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                StatTabItem(
+                    title = "This week",
+                    isSelected = selectedTab == PerformanceStatsTab.THIS_WEEK,
+                    onClick = { onTabSelected(PerformanceStatsTab.THIS_WEEK) }
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFF1F5F9))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.caller_name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${item.duration_minutes} min · ${item.time_string}",
-                        fontSize = 12.sp,
-                        color = TextSecondary
-                    )
-                    if (item.is_repeat_caller) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Favorite,
-                                contentDescription = "Repeat Caller",
-                                modifier = Modifier.size(12.dp),
-                                tint = Accent
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = "Repeat",
-                                fontSize = 11.sp,
-                                color = Accent,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                    if (item.gift_received.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.CardGiftcard,
-                                contentDescription = "Gift",
-                                modifier = Modifier.size(12.dp),
-                                tint = Primary
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = "Gift",
-                                fontSize = 11.sp,
-                                color = Primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
+            // Metrics depending on selectedTab
+            val (earningsStr, talkMinsStr, callsStr) = when (selectedTab) {
+                PerformanceStatsTab.TODAY -> Triple("₹214.80", "48.6", "9 · 1")
+                PerformanceStatsTab.YESTERDAY -> Triple("₹420.00", "92.0", "15 · 2")
+                PerformanceStatsTab.THIS_WEEK -> Triple("₹1,248.60", "284.0", "48 · 5")
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            // Row 1: Earnings
+            MetricRow(label = "Earnings", value = earningsStr)
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Earning
-            Text(
-                text = "+₹${item.earning_coins.toInt()}",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = OnlineSuccess
-            )
+            // Row 2: Talk minutes
+            MetricRow(label = "Talk minutes", value = talkMinsStr)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Row 3: Calls answered • missed
+            MetricRow(label = "Calls answered · missed", value = callsStr)
         }
+    }
+}
+
+@Composable
+private fun StatTabItem(
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = title,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color(0xFF0F172A) else Color(0xFF64748B)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(2.dp)
+                .background(if (isSelected) Color(0xFF134E4A) else Color.Transparent)
+        )
+    }
+}
+
+@Composable
+private fun MetricRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.5.sp,
+            color = Color(0xFF64748B),
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            fontSize = 14.5.sp,
+            color = Color(0xFF0F172A),
+            fontWeight = FontWeight.Bold
+        )
     }
 }

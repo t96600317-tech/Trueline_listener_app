@@ -72,7 +72,7 @@ actual fun FaceVerificationCamera(
         Box(
             modifier = modifier
                 .background(Color(0xFF0F1B22))
-                .padding(20.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -81,7 +81,7 @@ actual fun FaceVerificationCamera(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(50.dp)
                         .clip(CircleShape)
                         .background(Primary.copy(alpha = 0.18f)),
                     contentAlignment = Alignment.Center
@@ -90,37 +90,40 @@ actual fun FaceVerificationCamera(
                         imageVector = Icons.Rounded.Videocam,
                         contentDescription = "Camera Permission",
                         tint = Primary,
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "Camera Access Required",
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = "Enable camera to verify your face and liveness check",
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.72f),
+                    fontSize = 11.5.sp,
+                    color = Color.White.copy(alpha = 0.75f),
                     textAlign = TextAlign.Center,
-                    lineHeight = 16.sp
+                    lineHeight = 15.sp
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Button(
                     onClick = { permissionState.launchPermissionRequest() },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                    modifier = Modifier.height(44.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .defaultMinSize(minHeight = 40.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -130,13 +133,15 @@ actual fun FaceVerificationCamera(
                             imageVector = Icons.Rounded.CameraAlt,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = "Grant Permission",
-                            fontSize = 13.5.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }

@@ -6,9 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.trueline_listener.onboarding.OnboardingViewModel
 
 class MainActivity : ComponentActivity() {
@@ -18,13 +18,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Initialize Android Audio Engine for real microphone recording & playback
+        // Initialize Audio Engine & Session Storage & Location Provider & Call Service
         com.example.trueline_listener.audio.initAudioEngine(this)
-
-        // Initialize Android Session Storage for persistent JWT and state restoration
         com.example.trueline_listener.storage.initSessionStorage(this)
+        com.example.trueline_listener.location.initLocationProvider(this)
+        com.example.trueline_listener.call.initCallService(this)
 
-        // Ensure status bar icons are dark (for light theme)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
 
         setContent {
@@ -32,9 +31,7 @@ class MainActivity : ComponentActivity() {
             val onboardingViewModel = remember { OnboardingViewModel(scope) }
 
             BackHandler(enabled = true) {
-                // If user is inside onboarding steps, go back to previous step
                 if (!onboardingViewModel.goBack()) {
-                    // If on root screen (Phone Input), require double press within 2s to exit
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastBackPressTime < 2000) {
                         finish()

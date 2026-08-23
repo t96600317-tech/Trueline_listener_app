@@ -6,8 +6,10 @@ expect class CallServiceWrapper {
         roomId: String,
         targetUserId: String,
         targetUserName: String,
-        token: String,
-        onCallEnd: () -> Unit
+        token: String = "",
+        onCallEnd: () -> Unit = {}
     )
     fun endCall()
 }
+
+expect fun getCallService(): CallServiceWrapper

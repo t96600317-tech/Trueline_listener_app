@@ -43,13 +43,22 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         private set
 
     // --- Step 2 State (Basic Profile) ---
-    var fullName by mutableStateOf("")
+    var fullName by mutableStateOf(com.example.trueline_listener.ui.IndianListenerNames.getRandomName())
         private set
 
     var age by mutableStateOf("")
         private set
 
     var cityState by mutableStateOf("")
+        private set
+
+    var isDetectingLocation by mutableStateOf(false)
+        private set
+
+    var detectedLiveCity by mutableStateOf<com.example.trueline_listener.location.DetectedCityLocation?>(null)
+        private set
+
+    var locationErrorMessage by mutableStateOf<String?>(null)
         private set
 
     var selectedLanguages by mutableStateOf(setOf<String>("Hindi"))
@@ -310,7 +319,7 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         isApprovedListener = false
         phoneNumber = ""
         otp = ""
-        fullName = ""
+        fullName = com.example.trueline_listener.ui.IndianListenerNames.getRandomName()
         bio = ""
         capturedSelfieUri = null
         recordedVoicePath = null
@@ -382,6 +391,34 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
     fun onCityStateChanged(value: String) {
         cityState = value
         errorMessage = null
+    }
+
+    fun detectLiveLocation(onSuccess: (String) -> Unit = {}) {
+        isDetectingLocation = true
+        locationErrorMessage = null
+        val provider = com.example.trueline_listener.location.getLocationProvider()
+        provider.fetchLiveCity(
+            onSuccess = { loc ->
+                isDetectingLocation = false
+                detectedLiveCity = loc
+                cityState = loc.formatted
+                locationErrorMessage = null
+                onSuccess(loc.formatted)
+            },
+            onError = { err ->
+                isDetectingLocation = false
+                locationErrorMessage = err
+            }
+        )
+    }
+
+    fun clearLocationError() {
+        locationErrorMessage = null
+    }
+
+    fun setLocationError(msg: String) {
+        locationErrorMessage = msg
+        isDetectingLocation = false
     }
 
     fun toggleLanguage(language: String) {
@@ -492,8 +529,13 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
                 val kycStatus = response.data?.kyc_status ?: listener?.kyc_status ?: "pending"
 
                 // Populate existing profile data if available
+                if (listener != null && listener.name.isNotBlank()) {
+                    fullName = listener.name
+                } else if (fullName.isBlank()) {
+                    fullName = com.example.trueline_listener.ui.IndianListenerNames.getRandomName()
+                }
+
                 if (listener != null) {
-                    if (listener.name.isNotBlank()) fullName = listener.name
                     if (listener.bio.isNotBlank()) bio = listener.bio
                     if (listener.languages.isNotEmpty()) {
                         selectedLanguages = listener.languages.toSet()

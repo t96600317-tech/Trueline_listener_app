@@ -69,8 +69,8 @@ fun FaceVerificationScreen(viewModel: OnboardingViewModel) {
                 // Live Camera Viewport
                 Box(
                     modifier = Modifier
-                        .width(220.dp)
-                        .height(280.dp)
+                        .width(250.dp)
+                        .height(300.dp)
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color(0xFF0F1B22))
                         .border(

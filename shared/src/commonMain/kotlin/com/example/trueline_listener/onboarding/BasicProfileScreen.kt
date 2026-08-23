@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -98,7 +99,7 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 1. Display Name
+                // 1. Display Name (Read-Only Assigned Pseudonym)
                 Text(
                     text = "DISPLAY NAME",
                     fontSize = 11.5.sp,
@@ -107,27 +108,44 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
                     letterSpacing = 0.8.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                TextField(
-                    value = viewModel.fullName,
-                    onValueChange = { viewModel.onFullNameChanged(it) },
-                    placeholder = { Text("e.g. Priya", color = TextMuted, fontSize = 15.sp) },
-                    singleLine = true,
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.2.dp, BorderSubtle, RoundedCornerShape(12.dp)),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = Primary
-                    )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    border = androidx.compose.foundation.BorderStroke(1.2.dp, BorderSubtle)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = viewModel.fullName.ifBlank { "Assigned Name" },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Primary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = "ASSIGNED",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    text = "This is what users see. It can be different from your real name.",
+                    text = "🔒 This name has been assigned to protect your privacy & safety.",
                     fontSize = 12.sp,
                     color = TextSecondary,
                     lineHeight = 16.sp
@@ -595,6 +613,15 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
 
     // Redesigned City Search Dialog with Popular Metro Chips & State Badges
     if (showCitySearchDialog) {
+        val requestLocationPermission = com.example.trueline_listener.location.rememberLocationPermissionRequester(
+            onPermissionGranted = {
+                viewModel.detectLiveLocation()
+            },
+            onPermissionDenied = {
+                viewModel.setLocationError("Location permission is required to detect your city.")
+            }
+        )
+
         val popularCities = remember {
             listOf(
                 "Mumbai, Maharashtra",
@@ -654,7 +681,98 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Live GPS Location Auto-Detection Card
+                    val detectedLoc = viewModel.detectedLiveCity
+                    val isDetecting = viewModel.isDetectingLocation
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable(enabled = !isDetecting) {
+                                viewModel.clearLocationError()
+                                requestLocationPermission()
+                            },
+                        color = if (detectedLoc != null) Color(0xFFF0FDF4) else Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.2.dp,
+                            if (detectedLoc != null) OnlineSuccess else Color(0xFF93C5FD)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(if (detectedLoc != null) OnlineSuccess.copy(alpha = 0.16f) else Color(0xFF2563EB).copy(alpha = 0.14f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (isDetecting) "⏳" else "📍",
+                                        fontSize = 17.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isDetecting) "Detecting live GPS location..." 
+                                               else if (detectedLoc != null) "Detected: ${detectedLoc.formatted}" 
+                                               else "Use Live Location",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (detectedLoc != null) Color(0xFF15803D) else Color(0xFF1E40AF)
+                                    )
+                                    Text(
+                                        text = if (isDetecting) "Fetching city from GPS satellites..." 
+                                               else if (detectedLoc != null) "Verified real location via GPS" 
+                                               else "Auto-detect verified city to avoid fake info",
+                                        fontSize = 11.sp,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+
+                            if (detectedLoc != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = OnlineSuccess.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "GPS ✓",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = OnlineSuccess,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (viewModel.locationErrorMessage != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "⚠️ " + (viewModel.locationErrorMessage ?: ""),
+                            fontSize = 11.5.sp,
+                            color = Accent,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Search input
                     TextField(
@@ -685,6 +803,61 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
+
+                    // Regional Suggestions when Live Location is detected
+                    if (citySearchQuery.isBlank() && detectedLoc != null) {
+                        val stateFilter = detectedLoc.state
+                        val regionalCities = remember(detectedLoc) {
+                            IndianCitiesData.cities.filter { it.contains(stateFilter, ignoreCase = true) }.take(10)
+                        }
+
+                        if (regionalCities.isNotEmpty()) {
+                            Text(
+                                text = "SUGGESTED CITIES (${stateFilter.uppercase()})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Primary,
+                                letterSpacing = 0.8.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(regionalCities) { regCity ->
+                                    val cityName = regCity.split(",")[0]
+                                    val isSelected = viewModel.cityState == regCity
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(if (isSelected) Primary else Color(0xFFF0FDF4))
+                                            .border(
+                                                width = 1.dp,
+                                                color = if (isSelected) Primary else OnlineSuccess.copy(alpha = 0.5f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            .clickable {
+                                                viewModel.onCityStateChanged(regCity)
+                                                showCitySearchDialog = false
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                                    ) {
+                                        Text(
+                                            text = cityName,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) Color.White else Color(0xFF15803D)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = BorderSubtle)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
 
                     // Quick-pick Metro Chips
                     if (citySearchQuery.isBlank()) {
@@ -718,14 +891,14 @@ fun BasicProfileScreen(viewModel: OnboardingViewModel) {
                                             showCitySearchDialog = false
                                         }
                                         .padding(horizontal = 12.dp, vertical = 7.dp)
-                                ) {
-                                    Text(
-                                        text = cityName,
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else TextPrimary
-                                    )
-                                }
+                                    ) {
+                                        Text(
+                                            text = cityName,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) Color.White else TextPrimary
+                                        )
+                                    }
                             }
                         }
 

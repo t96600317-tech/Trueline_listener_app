@@ -92,7 +92,16 @@ data class PayoutRequestPayload(
 
 @Serializable
 data class CallAcceptResponse(
-    val listener_token: String
+    val listener_token: String = "",
+    val room_id: String = ""
+)
+
+@Serializable
+data class CallSessionData(
+    val id: String = "",
+    val room_id: String = "",
+    val caller_name: String = "Caller",
+    val status: String = "pending"
 )
 
 @Serializable

@@ -4,10 +4,20 @@ import android.content.Context
 import android.content.Intent
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallService
 
+private var globalCallService: CallServiceWrapper? = null
+
+fun initCallService(context: Context) {
+    globalCallService = CallServiceWrapper(context.applicationContext)
+}
+
+actual fun getCallService(): CallServiceWrapper {
+    return globalCallService ?: error("CallServiceWrapper not initialized. Call initCallService(context) in MainActivity.")
+}
+
 actual class CallServiceWrapper(private val context: Context) {
 
-    private var currentAppId: Long = 123456789L
-    private var currentAppSign: String = "zegocloud_secret_32_bytes_long!"
+    private var currentAppId: Long = 628007464L
+    private var currentAppSign: String = "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e"
     private var currentUserId: String = ""
     private var currentUserName: String = ""
 
@@ -39,6 +49,8 @@ actual class CallServiceWrapper(private val context: Context) {
     }
 
     actual fun endCall() {
-        ZegoUIKitPrebuiltCallService.endCall()
+        try {
+            ZegoUIKitPrebuiltCallService.endCall()
+        } catch (e: Exception) {}
     }
 }

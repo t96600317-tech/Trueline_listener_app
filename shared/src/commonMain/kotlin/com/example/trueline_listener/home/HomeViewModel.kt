@@ -67,6 +67,11 @@ class HomeViewModel(
 
     private var callTimerJob: Job? = null
 
+    var incomingCallerName by mutableStateOf("Caller")
+        private set
+
+    private var callWatcherJob: Job? = null
+
     init {
         loadData()
     }
@@ -78,6 +83,9 @@ class HomeViewModel(
             if (profRes.success && profRes.data != null) {
                 profile = profRes.data
                 isOnline = profRes.data.availability == "online"
+                if (isOnline) {
+                    startIncomingCallWatcher()
+                }
             }
 
             val earnRes = repository.getEarnings()
@@ -97,6 +105,11 @@ class HomeViewModel(
             isLoading = false
             if (res.success || res.error?.code == "NETWORK_ERROR") {
                 isOnline = !isOnline
+                if (isOnline) {
+                    startIncomingCallWatcher()
+                } else {
+                    stopIncomingCallWatcher()
+                }
             } else {
                 errorMessage = res.error?.message ?: "Failed to change availability"
             }
@@ -143,14 +156,18 @@ class HomeViewModel(
     }
 
     // Call Actions
-    fun onIncomingCallReceived(sessionId: String, roomId: String) {
+    fun onIncomingCallReceived(sessionId: String, roomId: String, callerName: String = "Caller") {
         activeSessionId = sessionId
         activeRoomId = roomId
+        incomingCallerName = callerName
         screenState = AppScreenState.INCOMING_CALL
     }
 
     fun acceptCall() {
         val sid = activeSessionId ?: "session-demo-001"
+        val partnerId = profile?.id ?: "listener"
+        val roomId = activeRoomId ?: "call_${partnerId.replace("-", "").take(16)}"
+        val callerName = incomingCallerName.ifBlank { "User" }
         isLoading = true
         scope.launch {
             val res = repository.acceptCall(sid)
@@ -160,6 +177,17 @@ class HomeViewModel(
             }
             screenState = AppScreenState.ACTIVE_CALL
             startCallTimer()
+
+            // Launch Zego 1-on-1 audio call room
+            com.example.trueline_listener.call.getCallService().startAudioCall(
+                roomId = roomId,
+                targetUserId = sid,
+                targetUserName = callerName,
+                token = listenerToken ?: "",
+                onCallEnd = {
+                    endActiveCall()
+                }
+            )
         }
     }
 
@@ -185,6 +213,29 @@ class HomeViewModel(
 
     fun toggleMute() {
         isMuted = !isMuted
+    }
+
+    private fun startIncomingCallWatcher() {
+        callWatcherJob?.cancel()
+        callWatcherJob = scope.launch {
+            while (true) {
+                if (isOnline && screenState == AppScreenState.HOME) {
+                    val incoming = repository.checkIncomingCalls()
+                    if (incoming.success && incoming.data != null) {
+                        val session = incoming.data
+                        if (session.status == "pending") {
+                            onIncomingCallReceived(session.id, session.room_id, session.caller_name)
+                        }
+                    }
+                }
+                delay(2000)
+            }
+        }
+    }
+
+    private fun stopIncomingCallWatcher() {
+        callWatcherJob?.cancel()
+        callWatcherJob = null
     }
 
     private fun startCallTimer() {

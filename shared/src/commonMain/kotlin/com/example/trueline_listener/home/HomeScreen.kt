@@ -322,7 +322,7 @@ fun IncomingCallView(viewModel: HomeViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
             Text("Incoming Audio Call", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Caller (Verified)", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text(viewModel.incomingCallerName, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text("Rate: ₹4.5/min earning (Server Metered)", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }

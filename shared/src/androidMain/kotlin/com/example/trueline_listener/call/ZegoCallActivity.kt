@@ -1,6 +1,7 @@
 package com.example.trueline_listener.call
 
 import android.os.Bundle
+import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallConfig
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallFragment
@@ -14,8 +15,27 @@ class ZegoCallActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val appId = intent.getLongExtra("APP_ID", 123456789L)
-        val appSign = intent.getStringExtra("APP_SIGN") ?: "zegocloud_secret_32_bytes_long!"
+        val containerId = try {
+            val resId = resources.getIdentifier("fragment_container", "id", packageName)
+            if (resId != 0) {
+                val layoutId = resources.getIdentifier("activity_zego_call", "layout", packageName)
+                if (layoutId != 0) {
+                    setContentView(layoutId)
+                    resId
+                } else {
+                    val frameLayout = FrameLayout(this).apply { id = resId }
+                    setContentView(frameLayout)
+                    resId
+                }
+            } else {
+                android.R.id.content
+            }
+        } catch (e: Exception) {
+            android.R.id.content
+        }
+
+        val appId = intent.getLongExtra("APP_ID", 628007464L)
+        val appSign = intent.getStringExtra("APP_SIGN") ?: "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e"
         val userId = intent.getStringExtra("USER_ID") ?: ("listener_" + System.currentTimeMillis())
         val userName = intent.getStringExtra("USER_NAME") ?: "Listener"
         val callId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
@@ -36,7 +56,7 @@ class ZegoCallActivity : FragmentActivity() {
         )
 
         supportFragmentManager.beginTransaction()
-            .replace(android.R.id.content, fragment)
+            .replace(containerId, fragment)
             .commitNow()
     }
 

@@ -8,7 +8,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-enum class PortalTab { HOME, CHAT, EARNINGS, PROFILE }
+enum class PortalTab { HOME, CALLS, CHAT, EARNINGS, PROFILE }
+
+enum class AvailabilityMode { OFFLINE, BUSY, ONLINE }
+
+enum class PerformanceStatsTab { TODAY, YESTERDAY, THIS_WEEK }
+
+enum class TransactionFilter { ALL, CALLS, BONUS, PAYOUT, PENALTY }
+
+enum class ChatFilter { ALL, UNREAD, REGULARS, NEEDS_REPLY }
 
 enum class PortalSubScreen {
     NONE,
@@ -17,7 +25,8 @@ enum class PortalSubScreen {
     REPORT_USER,
     AVAILABLE_HOURS,
     PRIVACY_INFO,
-    SUPPORT_INFO
+    SUPPORT_INFO,
+    TRANSACTIONS
 }
 
 class MainPortalViewModel(
@@ -31,11 +40,54 @@ class MainPortalViewModel(
         private set
 
     // Toggle on Home Tab between Milestone Checklist and Active Dashboard
-    var showMilestoneChecklist by mutableStateOf(false)
+    var showMilestoneChecklist by mutableStateOf(true)
         private set
 
-    var isOnline by mutableStateOf(false)
+    var isOnline by mutableStateOf(true)
         private set
+
+    var availabilityMode by mutableStateOf(AvailabilityMode.ONLINE)
+        private set
+
+    var selectedStatsTab by mutableStateOf(PerformanceStatsTab.TODAY)
+        private set
+
+    var selectedTransactionFilter by mutableStateOf(TransactionFilter.ALL)
+        private set
+
+    fun selectTransactionFilter(filter: TransactionFilter) {
+        selectedTransactionFilter = filter
+    }
+
+    var showGoOfflineModal by mutableStateOf(false)
+        private set
+
+    fun openGoOfflineModal() {
+        showGoOfflineModal = true
+    }
+
+    fun closeGoOfflineModal() {
+        showGoOfflineModal = false
+    }
+
+    fun confirmGoOffline() {
+        updateAvailabilityMode(AvailabilityMode.OFFLINE)
+        showGoOfflineModal = false
+    }
+
+    var chatSearchQuery by mutableStateOf("")
+        private set
+
+    fun updateChatSearchQuery(query: String) {
+        chatSearchQuery = query
+    }
+
+    var selectedChatFilter by mutableStateOf(ChatFilter.ALL)
+        private set
+
+    fun selectChatFilter(filter: ChatFilter) {
+        selectedChatFilter = filter
+    }
 
     var isLoading by mutableStateOf(false)
         private set
@@ -116,6 +168,14 @@ class MainPortalViewModel(
         showMilestoneChecklist = show
     }
 
+    fun showMilestones() {
+        showMilestoneChecklist = true
+    }
+
+    fun hideMilestones() {
+        showMilestoneChecklist = false
+    }
+
     fun refreshAllData() {
         isLoading = true
         scope.launch {
@@ -167,6 +227,8 @@ class MainPortalViewModel(
     }
 
     // --- Chat Functions ---
+    private var chatPollingJob: kotlinx.coroutines.Job? = null
+
     fun fetchConversations() {
         isChatListLoading = true
         scope.launch {
@@ -184,47 +246,108 @@ class MainPortalViewModel(
         activeChatUserName = userName
         isChatMessagesLoading = true
         currentChatMessages.clear()
+
+        // 1. Initial fetch
         scope.launch {
             val res = repository.getChatMessages(userId)
             isChatMessagesLoading = false
             if (res.success && res.data != null) {
+                currentChatMessages.clear()
                 currentChatMessages.addAll(res.data)
+            }
+        }
+
+        // 2. Real-time background polling loop while chat is open
+        chatPollingJob?.cancel()
+        chatPollingJob = scope.launch {
+            while (activeChatUserId == userId) {
+                delay(2500)
+                val res = repository.getChatMessages(userId)
+                if (res.success && res.data != null) {
+                    val serverMsgs = res.data
+                    if (serverMsgs.size != currentChatMessages.size || (serverMsgs.isNotEmpty() && currentChatMessages.isNotEmpty() && serverMsgs.last().id != currentChatMessages.last().id)) {
+                        currentChatMessages.clear()
+                        currentChatMessages.addAll(serverMsgs)
+                    }
+                }
             }
         }
     }
 
     fun sendChatMessage(content: String) {
         val targetId = activeChatUserId ?: return
-        if (content.isBlank()) return
+        val text = content.trim()
+        if (text.isBlank()) return
+
+        // Optimistic UI display
+        val optimisticMsg = ChatMessageData(
+            id = "temp_${System.currentTimeMillis()}",
+            user_id = targetId,
+            partner_id = "",
+            sender_type = "partner",
+            content = text,
+            created_at = "Just now"
+        )
+        currentChatMessages.add(optimisticMsg)
+
         scope.launch {
-            val res = repository.sendChatMessage(targetId, content.trim())
+            val res = repository.sendChatMessage(targetId, text)
             if (res.success && res.data != null) {
-                currentChatMessages.add(res.data)
+                val index = currentChatMessages.indexOfFirst { it.id == optimisticMsg.id }
+                if (index >= 0) {
+                    currentChatMessages[index] = res.data
+                }
                 fetchConversations()
             }
         }
     }
 
     fun closeChat() {
+        chatPollingJob?.cancel()
+        chatPollingJob = null
         activeChatUserId = null
         activeChatUserName = ""
         currentChatMessages.clear()
+        fetchConversations()
+    }
+
+    fun startAudioCall(targetUserId: String, targetUserName: String) {
+        val roomId = "call_${dashboardData.listener_id_tag.ifBlank { "listener" }}_$targetUserId"
+        successNotification = "Connecting voice call with $targetUserName..."
+        scope.launch {
+            delay(3000)
+            successNotification = null
+        }
     }
 
     fun toggleAvailability() {
-        val newStatus = if (isOnline) "offline" else "online"
+        val newMode = if (availabilityMode == AvailabilityMode.ONLINE) AvailabilityMode.OFFLINE else AvailabilityMode.ONLINE
+        updateAvailabilityMode(newMode)
+    }
+
+    fun updateAvailabilityMode(mode: AvailabilityMode) {
+        availabilityMode = mode
+        isOnline = (mode == AvailabilityMode.ONLINE)
+        val statusStr = when (mode) {
+            AvailabilityMode.OFFLINE -> "offline"
+            AvailabilityMode.BUSY -> "busy"
+            AvailabilityMode.ONLINE -> "online"
+        }
         isLoading = true
         errorMessage = null
         scope.launch {
-            val res = repository.setAvailability(newStatus)
+            val res = repository.setAvailability(statusStr)
             isLoading = false
             if (res.success || res.error?.code == "NETWORK_ERROR") {
-                isOnline = !isOnline
-                dashboardData = dashboardData.copy(availability = if (isOnline) "online" else "offline")
+                dashboardData = dashboardData.copy(availability = statusStr)
             } else {
                 errorMessage = res.error?.message ?: "Failed to change availability"
             }
         }
+    }
+
+    fun selectStatsTab(tab: PerformanceStatsTab) {
+        selectedStatsTab = tab
     }
 
     fun openWithdrawModal() {
@@ -453,6 +576,12 @@ class MainPortalViewModel(
             voicePlaybackProgress = 0f
         }
         isOnline = false
+        availabilityMode = AvailabilityMode.OFFLINE
+        scope.launch {
+            try {
+                repository.setAvailability("offline")
+            } catch (_: Exception) {}
+        }
         repository.clearAuthSession()
         onLogout?.invoke()
     }
