@@ -24,6 +24,7 @@ class ZegoCallActivity : AppCompatActivity() {
     private var userName: String = ""
     private var callId: String = ""
     private var containerLayoutId: Int = 0
+    private var isFragmentAttached = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,9 +37,14 @@ class ZegoCallActivity : AppCompatActivity() {
 
         appId = intent.getLongExtra("APP_ID", 628007464L)
         appSign = intent.getStringExtra("APP_SIGN") ?: "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e"
-        userId = intent.getStringExtra("USER_ID") ?: ("listener_" + System.currentTimeMillis())
-        userName = intent.getStringExtra("USER_NAME") ?: "Listener"
-        callId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
+        
+        val rawUserId = intent.getStringExtra("USER_ID") ?: ("listener_" + System.currentTimeMillis())
+        userId = rawUserId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "listener_${System.currentTimeMillis()}" }.take(64)
+        
+        userName = (intent.getStringExtra("USER_NAME") ?: "Listener").trim().ifBlank { "Listener" }.take(64)
+        
+        val rawCallId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
+        callId = rawCallId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "call_${System.currentTimeMillis()}" }.take(64)
 
         val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -66,6 +72,9 @@ class ZegoCallActivity : AppCompatActivity() {
     }
 
     private fun startCallFragment(containerId: Int) {
+        if (isFragmentAttached || isFinishing || isDestroyed) return
+        isFragmentAttached = true
+
         try {
             val config = ZegoUIKitPrebuiltCallConfig.oneOnOneVoiceCall().apply {
                 turnOnCameraWhenJoining = false
@@ -93,7 +102,11 @@ class ZegoCallActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        onCallEndCallback?.invoke()
+        try {
+            onCallEndCallback?.invoke()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         onCallEndCallback = null
     }
 }
