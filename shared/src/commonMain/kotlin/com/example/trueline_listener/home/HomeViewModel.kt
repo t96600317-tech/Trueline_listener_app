@@ -83,6 +83,14 @@ class HomeViewModel(
             if (profRes.success && profRes.data != null) {
                 profile = profRes.data
                 isOnline = profRes.data.availability == "online"
+                try {
+                    com.example.trueline_listener.call.getCallService().initialize(
+                        628007464L,
+                        "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e",
+                        profRes.data.id,
+                        profRes.data.name
+                    )
+                } catch (e: Exception) {}
                 if (isOnline) {
                     startIncomingCallWatcher()
                 }

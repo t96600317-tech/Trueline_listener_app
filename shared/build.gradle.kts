@@ -52,6 +52,7 @@ kotlin {
             implementation(libs.mlkit.face.detection)
             implementation(libs.ktor.client.okhttp)
             implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
+            implementation("com.github.ZEGOCLOUD:zego_uikit_signaling_plugin_android:+")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

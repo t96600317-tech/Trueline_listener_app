@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
 
     implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
+    implementation("com.github.ZEGOCLOUD:zego_uikit_signaling_plugin_android:+")
     implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
