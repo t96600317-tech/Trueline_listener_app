@@ -17,6 +17,7 @@ dependencies {
 
     implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
     implementation("com.github.ZEGOCLOUD:zego_uikit_signaling_plugin_android:+")
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
