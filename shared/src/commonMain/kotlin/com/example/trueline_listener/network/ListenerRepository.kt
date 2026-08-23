@@ -211,23 +211,30 @@ class ListenerRepository(
     }
 
     fun observeCallEvents(sessionId: String): Flow<CallEvent> = flow {
+        val token = getAuthToken()
+        if (token.isNullOrBlank()) return@flow
+
         val isSecure = primaryHost.contains("api.truelineapp.in")
         val host = primaryHost.split(":")[0]
         val port = if (isSecure) 443 else (primaryHost.split(":").getOrNull(1)?.toInt() ?: 8080)
-        client.webSocket(
-            method = HttpMethod.Get,
-            host = host,
-            port = port,
-            path = "/api/v1/calls/$sessionId/events?token=${getAuthToken()}"
-        ) {
-            while (true) {
-                try {
-                    val event = receiveDeserialized<CallEvent>()
-                    emit(event)
-                } catch (e: Exception) {
-                    break
+        try {
+            client.webSocket(
+                method = HttpMethod.Get,
+                host = host,
+                port = port,
+                path = "/api/v1/calls/$sessionId/events?token=$token"
+            ) {
+                while (true) {
+                    try {
+                        val event = receiveDeserialized<CallEvent>()
+                        emit(event)
+                    } catch (e: Exception) {
+                        break
+                    }
                 }
             }
+        } catch (e: Exception) {
+            // Silently absorb WebSocket handshake or protocol exceptions so app never crashes
         }
     }
 
