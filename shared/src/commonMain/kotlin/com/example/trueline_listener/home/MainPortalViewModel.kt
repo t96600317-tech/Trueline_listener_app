@@ -594,4 +594,21 @@ class MainPortalViewModel(
             successNotification = null
         }
     }
+
+    fun startCallWithUser(targetUserId: String, targetUserName: String) {
+        val roomId = "call_${targetUserId.replace("-", "").take(16)}"
+        try {
+            com.example.trueline_listener.call.getCallService().startAudioCall(
+                roomId = roomId,
+                targetUserId = targetUserId,
+                targetUserName = targetUserName,
+                token = "",
+                onCallEnd = {
+                    refreshAllData()
+                }
+            )
+        } catch (e: Exception) {
+            errorMessage = e.message ?: "Failed to initiate call"
+        }
+    }
 }
