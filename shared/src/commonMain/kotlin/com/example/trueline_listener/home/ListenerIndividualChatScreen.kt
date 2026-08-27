@@ -321,9 +321,10 @@ private fun MessageBubble(
                 if (message.created_at.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = message.created_at,
+                        text = com.example.trueline_listener.formatTimestamp(message.created_at),
                         fontSize = 10.5.sp,
-                        color = if (isMine) Color.White.copy(alpha = 0.7f) else Color(0xFF94A3B8),
+                        color = if (isMine) Color.White.copy(alpha = 0.75f) else Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.align(Alignment.End)
                     )
                 }

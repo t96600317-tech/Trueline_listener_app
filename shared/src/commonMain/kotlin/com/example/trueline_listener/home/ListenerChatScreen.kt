@@ -74,7 +74,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             avatarText = name.take(2).uppercase().ifBlank { "U" },
             callerTitle = name,
             lastMessage = conv.last_message.ifBlank { "Tap to chat" },
-            timestamp = conv.last_message_time.ifBlank { "Just now" },
+            timestamp = com.example.trueline_listener.formatTimestamp(conv.last_message_time).ifBlank { "Just now" },
             unreadCount = conv.unread_count,
             isRegular = true,
             filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else ChatFilter.ALL
