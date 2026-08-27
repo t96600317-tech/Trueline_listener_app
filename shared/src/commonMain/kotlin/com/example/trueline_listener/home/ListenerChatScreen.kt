@@ -67,10 +67,11 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
 
     // Build chat items from server conversations or default mock conversations
     val serverChats = viewModel.conversations.map { conv ->
-        val name = conv.user_name.ifBlank { "Caller ${conv.user_id.takeLast(4)}" }
+        val effectiveUserId = conv.user_id.ifBlank { conv.listener_id }
+        val name = conv.user_name.ifBlank { conv.listener_name.ifBlank { "user${effectiveUserId.takeLast(6)}" } }
         ChatDisplayItem(
-            userId = conv.user_id,
-            avatarText = name.take(2).uppercase().ifBlank { "CL" },
+            userId = effectiveUserId,
+            avatarText = name.take(2).uppercase().ifBlank { "U" },
             callerTitle = name,
             lastMessage = conv.last_message.ifBlank { "Tap to chat" },
             timestamp = conv.last_message_time.ifBlank { "Just now" },
