@@ -34,7 +34,9 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFFF8FAFB)
     ) {
-        if (viewModel.activeChatUserId != null) {
+        if (viewModel.incomingCallSession != null) {
+            IncomingCallOverlay(viewModel = viewModel)
+        } else if (viewModel.activeChatUserId != null) {
             ListenerIndividualChatScreen(viewModel = viewModel)
         } else {
             Scaffold(

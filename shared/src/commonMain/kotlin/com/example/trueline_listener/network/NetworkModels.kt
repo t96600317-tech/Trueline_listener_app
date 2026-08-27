@@ -100,8 +100,11 @@ data class CallAcceptResponse(
 data class CallSessionData(
     val id: String = "",
     val room_id: String = "",
+    val caller_id: String = "",
     val caller_name: String = "Caller",
-    val status: String = "pending"
+    val status: String = "pending",
+    val rate_per_min: Double = 9.0,
+    val earning_per_min: Double = 4.5
 )
 
 @Serializable
