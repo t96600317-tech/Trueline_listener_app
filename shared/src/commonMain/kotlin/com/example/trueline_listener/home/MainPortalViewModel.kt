@@ -254,6 +254,9 @@ class MainPortalViewModel(
             isPullToRefreshing = true
         }
         scope.launch {
+            if (isManualPull) {
+                delay(1800)
+            }
             val res = repository.getChatConversations()
             if (isManualPull) {
                 isPullToRefreshing = false
