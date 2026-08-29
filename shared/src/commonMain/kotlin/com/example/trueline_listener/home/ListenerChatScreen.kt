@@ -16,6 +16,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -45,6 +47,7 @@ data class ChatDisplayItem(
     val filterType: ChatFilter
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
@@ -53,11 +56,11 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val currentFilter = viewModel.selectedChatFilter
     val focusManager = LocalFocusManager.current
 
-    // Periodically refresh conversation list in background
+    // Periodically refresh conversation list in background every 3 seconds for live online detection
     LaunchedEffect(Unit) {
         viewModel.fetchConversations()
         while (true) {
-            delay(8000)
+            delay(3000)
             viewModel.fetchConversations()
         }
     }
@@ -104,14 +107,19 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
         ChatFilter.NEEDS_REPLY -> searchFiltered.filter { it.unreadCount > 0 || it.lastMessageSender == "user" }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8FAFB))
-            .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    PullToRefreshBox(
+        isRefreshing = viewModel.isChatListLoading,
+        onRefresh = { viewModel.fetchConversations() },
+        modifier = Modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8FAFB))
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // 1. Header: All chats Title & Add (+) Action Button
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -404,6 +412,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
 
         Spacer(modifier = Modifier.height(28.dp))
     }
+}
 }
 
 @Composable
