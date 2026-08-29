@@ -1,9 +1,11 @@
 package com.example.trueline_listener.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,25 +41,61 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                // Top Row: Back Arrow + Logo Badge
+                // Top Row: Back Arrow + Logo Badge + Quick Transactions Button
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(
-                        onClick = { viewModel.selectTab(PortalTab.HOME) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { viewModel.selectTab(PortalTab.HOME) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        TrueLineLogoBadge(size = 24.dp, isDarkTheme = true)
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    TrueLineLogoBadge(size = 24.dp, isDarkTheme = true)
+                    // Header Transactions Shortcut Pill
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable {
+                                viewModel.selectTransactionFilter(TransactionFilter.ALL)
+                                viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                            },
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Transactions",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "›",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -108,24 +146,48 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp)
                 ) {
-                    Text(
-                        text = "This week's breakdown",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "This week's breakdown",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+
+                        Text(
+                            text = "Details →",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0D9488),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable {
+                                    viewModel.selectTransactionFilter(TransactionFilter.ALL)
+                                    viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                                }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Row 1: Talk time
                     BreakdownRow(
                         label = "Talk time · 264 min",
-                        amount = "₹1,188.00"
+                        amount = "₹1,188.00",
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.CALLS)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -133,7 +195,11 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     // Row 2: Streak bonuses
                     BreakdownRow(
                         label = "Streak bonuses",
-                        amount = "₹120.00"
+                        amount = "₹120.00",
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.BONUS)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -142,7 +208,11 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     BreakdownRow(
                         label = "Missed-call penalty",
                         amount = "- ₹20.00",
-                        amountColor = Color(0xFFEA580C)
+                        amountColor = Color(0xFFEA580C),
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.PENALTY)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -151,7 +221,11 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     BreakdownRow(
                         label = "Pending (clears in 48h)",
                         amount = "₹39.40",
-                        amountColor = Color(0xFFD97706)
+                        amountColor = Color(0xFFD97706),
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.ALL)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -189,17 +263,37 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp)
                 ) {
-                    Text(
-                        text = "Recent payouts",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent payouts",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+
+                        Text(
+                            text = "See all",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0D9488),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable {
+                                    viewModel.selectTransactionFilter(TransactionFilter.PAYOUT)
+                                    viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                                }
+                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -207,7 +301,11 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     RecentPayoutRow(
                         dateStr = "Mon 17 Aug",
                         subtitleStr = "UPI · 2 h 14 m to settle",
-                        amountStr = "₹2,910.00"
+                        amountStr = "₹2,910.00",
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.PAYOUT)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -218,19 +316,89 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     RecentPayoutRow(
                         dateStr = "Mon 10 Aug",
                         subtitleStr = "UPI · same day",
-                        amountStr = "₹2,184.50"
+                        amountStr = "₹2,184.50",
+                        onClick = {
+                            viewModel.selectTransactionFilter(TransactionFilter.PAYOUT)
+                            viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                        }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Card 3: Policy Footer Banner
+            // Card 3: Dedicated All Transactions Entry Card
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable {
+                        viewModel.selectTransactionFilter(TransactionFilter.ALL)
+                        viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS)
+                    },
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFFF1F5F9),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "🧾",
+                                    fontSize = 20.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column {
+                            Text(
+                                text = "All Transactions",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Calls, streak bonuses, penalties & payouts",
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "›",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Card 4: Policy Footer Banner
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 color = Color(0xFFE6F4F1),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCE8E3))
+                border = BorderStroke(1.dp, Color(0xFFCCE8E3))
             ) {
                 Text(
                     text = "Payouts run every Monday for the week that ended Sunday. No minimum, no fee.",
@@ -251,25 +419,41 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
 private fun BreakdownRow(
     label: String,
     amount: String,
-    amountColor: Color = Color(0xFF0F172A)
+    amountColor: Color = Color(0xFF0F172A),
+    onClick: () -> Unit = {}
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            fontSize = 13.5.sp,
-            color = Color(0xFF64748B),
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = amount,
-            fontSize = 14.5.sp,
-            fontWeight = FontWeight.Bold,
-            color = amountColor
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                fontSize = 13.5.sp,
+                color = Color(0xFF64748B),
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = amount,
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = amountColor
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "›",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFCBD5E1)
+            )
+        }
     }
 }
 
@@ -277,10 +461,15 @@ private fun BreakdownRow(
 private fun RecentPayoutRow(
     dateStr: String,
     subtitleStr: String,
-    amountStr: String
+    amountStr: String,
+    onClick: () -> Unit = {}
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -300,11 +489,20 @@ private fun RecentPayoutRow(
             )
         }
 
-        Text(
-            text = amountStr,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0F172A)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = amountStr,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "›",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFCBD5E1)
+            )
+        }
     }
 }
