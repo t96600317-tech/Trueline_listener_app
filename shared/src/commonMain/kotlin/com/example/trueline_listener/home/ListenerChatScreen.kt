@@ -40,6 +40,7 @@ data class ChatDisplayItem(
     val timestamp: String,
     val unreadCount: Int = 0,
     val isRegular: Boolean = false,
+    val isOnline: Boolean = true,
     val lastMessageSender: String = "",
     val filterType: ChatFilter
 )
@@ -47,6 +48,7 @@ data class ChatDisplayItem(
 @Composable
 fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
+    val onlineScrollState = rememberScrollState()
     val filterScrollState = rememberScrollState()
     val currentFilter = viewModel.selectedChatFilter
     val focusManager = LocalFocusManager.current
@@ -65,6 +67,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
         val effectiveUserId = conv.user_id.ifBlank { conv.listener_id }
         val name = conv.user_name.ifBlank { conv.listener_name.ifBlank { "user${effectiveUserId.takeLast(6)}" } }
         val isRegular = conv.is_regular
+        val isOnline = conv.user_availability == "online" || conv.listener_availability == "online"
         ChatDisplayItem(
             userId = effectiveUserId,
             avatarText = name.take(2).uppercase().ifBlank { "U" },
@@ -73,10 +76,13 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             timestamp = com.example.trueline_listener.formatTimestamp(conv.last_message_time).ifBlank { "Just now" },
             unreadCount = conv.unread_count,
             isRegular = isRegular,
+            isOnline = isOnline,
             lastMessageSender = conv.last_message_sender,
             filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else if (isRegular) ChatFilter.REGULARS else ChatFilter.ALL
         )
     }
+
+    val onlineCallers = combinedChats.filter { it.isOnline }
 
     // Apply Search Query filter
     val searchFiltered = if (viewModel.chatSearchQuery.isBlank()) {
@@ -219,7 +225,81 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // 2.5 ONLINE NOW Section (Only shown if real callers from past chats are online)
+        if (onlineCallers.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(
+                    text = "• ONLINE NOW",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F766E),
+                    letterSpacing = 0.8.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ONLINE NOW Avatars Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(onlineScrollState),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                onlineCallers.forEach { caller ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            val cleanName = caller.callerTitle.substringBefore(" ·")
+                            viewModel.openChat(caller.userId, cleanName)
+                        }
+                    ) {
+                        Box {
+                            Surface(
+                                modifier = Modifier.size(46.dp),
+                                shape = CircleShape,
+                                color = Color(0xFFE2ECE9)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = caller.avatarText,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF334155)
+                                    )
+                                }
+                            }
+                            // Green Online Dot Badge
+                            Surface(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .align(Alignment.BottomEnd),
+                                shape = CircleShape,
+                                color = Color(0xFF0F766E),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
+                            ) {}
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = caller.callerTitle.substringBefore(" ·").take(10),
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF64748B),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
 
         // 3. Filter Chips Row
         Row(
