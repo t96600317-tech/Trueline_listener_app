@@ -101,30 +101,6 @@ fun ListenerIndividualChatScreen(viewModel: MainPortalViewModel) {
                         )
                     }
                 },
-                actions = {
-                    // Direct Call Button
-                    IconButton(onClick = {
-                        viewModel.startAudioCall(
-                            targetUserId = partnerId,
-                            targetUserName = partnerName
-                        )
-                    }) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFFE2ECE9),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Call,
-                                    contentDescription = "Call",
-                                    tint = Color(0xFF134E4A),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
