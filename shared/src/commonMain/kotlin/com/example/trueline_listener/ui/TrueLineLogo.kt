@@ -5,12 +5,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,15 +49,15 @@ fun TrueLineLogoBadge(
         Row(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(horizontal = size * 0.16f),
-            horizontalArrangement = Arrangement.spacedBy(size * 0.06f),
+                .padding(horizontal = size * 0.14f),
+            horizontalArrangement = Arrangement.spacedBy(size * 0.055f),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Line 1: Teal (Short dot/pill)
+            // Line 1: Teal (Short)
             Box(
                 modifier = Modifier
                     .width(barWidth)
-                    .fillMaxHeight(0.26f)
+                    .fillMaxHeight(0.24f)
                     .clip(RoundedCornerShape(cornerRadius))
                     .background(tealBarColor)
             )
@@ -64,25 +66,25 @@ fun TrueLineLogoBadge(
             Box(
                 modifier = Modifier
                     .width(barWidth)
-                    .fillMaxHeight(0.62f)
+                    .fillMaxHeight(0.58f)
                     .clip(RoundedCornerShape(cornerRadius))
                     .background(tealBarColor)
             )
 
-            // Line 3: Yellow/Amber (Tallest)
+            // Line 3: Yellow/Amber (Tallest center bar)
             Box(
                 modifier = Modifier
                     .width(barWidth * 1.05f)
-                    .fillMaxHeight(0.88f)
+                    .fillMaxHeight(0.85f)
                     .clip(RoundedCornerShape(cornerRadius))
                     .background(yellowBarColor)
             )
 
-            // Line 4: Teal (Medium)
+            // Line 4: Teal (Medium-Tall)
             Box(
                 modifier = Modifier
                     .width(barWidth)
-                    .fillMaxHeight(0.48f)
+                    .fillMaxHeight(0.58f)
                     .clip(RoundedCornerShape(cornerRadius))
                     .background(tealBarColor)
             )
@@ -99,6 +101,66 @@ fun TrueLineLogo(
     TrueLineLogoBadge(size = size, isDarkTheme = false)
 }
 
+/**
+ * Pixel-accurate TrueLine Listener brand lockup matching trueline-listener-lockup-white-7080.png
+ */
+@Composable
+fun TrueLineBrandLockup(
+    modifier: Modifier = Modifier,
+    height: Dp = 28.dp,
+    isDarkTheme: Boolean = false
+) {
+    Row(
+        modifier = modifier.height(height),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 1. Brand Waveform Icon Badge
+        TrueLineLogoBadge(size = height, isDarkTheme = isDarkTheme)
+
+        Spacer(modifier = Modifier.width((height.value * 0.25f).dp))
+
+        // 2. "TrueLine" Typography
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "True",
+                fontSize = (height.value * 0.62f).sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Serif,
+                color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
+                letterSpacing = (-0.5).sp
+            )
+            Text(
+                text = "Line",
+                fontSize = (height.value * 0.62f).sp,
+                fontWeight = FontWeight.Normal,
+                fontFamily = FontFamily.Serif,
+                color = if (isDarkTheme) Color(0xFF8AD1C9) else Color(0xFF286366),
+                letterSpacing = (-0.5).sp
+            )
+        }
+
+        Spacer(modifier = Modifier.width((height.value * 0.28f).dp))
+
+        // 3. "LISTENER" Pill Badge Container
+        Surface(
+            shape = RoundedCornerShape((height.value * 0.22f).dp),
+            color = if (isDarkTheme) Color(0x33FFFFFF) else Color(0xFFE2F1F0)
+        ) {
+            Text(
+                text = "LISTENER",
+                fontSize = (height.value * 0.33f).sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isDarkTheme) Color(0xFFCCECE8) else Color(0xFF134E4A),
+                letterSpacing = 1.2.sp,
+                modifier = Modifier.padding(
+                    horizontal = (height.value * 0.25f).dp,
+                    vertical = (height.value * 0.08f).dp
+                )
+            )
+        }
+    }
+}
+
 @Composable
 fun TrueLineBrandHeader(
     modifier: Modifier = Modifier,
@@ -106,28 +168,9 @@ fun TrueLineBrandHeader(
     titleSize: androidx.compose.ui.unit.TextUnit = 28.sp,
     showSubtitle: Boolean = true
 ) {
-    Row(
+    TrueLineBrandLockup(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        TrueLineLogoBadge(size = logoSize, isDarkTheme = false)
-        Spacer(modifier = Modifier.width(9.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "True",
-                fontSize = titleSize,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF0F172A),
-                letterSpacing = (-0.5).sp
-            )
-            Text(
-                text = "Line",
-                fontSize = titleSize,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF286366),
-                letterSpacing = (-0.5).sp
-            )
-        }
-    }
+        height = logoSize,
+        isDarkTheme = false
+    )
 }

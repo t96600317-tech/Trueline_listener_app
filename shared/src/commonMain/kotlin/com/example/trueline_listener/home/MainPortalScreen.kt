@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.MonetizationOn
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.trueline_listener.ui.TrueLineBrandLockup
 import com.example.trueline_listener.ui.TrueLineLogoBadge
 import com.example.trueline_listener.ui.WalletIcon
 import com.example.trueline_listener.ui.theme.*
@@ -211,32 +212,8 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
             }
         }
 
-        // Center: TrueLine listener logo & title
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TrueLineLogoBadge(size = 26.dp, isDarkTheme = false)
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Text(
-                text = "True",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
-            )
-            Text(
-                text = "Line",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color(0xFF1E293B)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "listener",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF64748B),
-                modifier = Modifier.padding(top = 3.dp)
-            )
-        }
+        // Center: TrueLine listener brand lockup matching official asset
+        TrueLineBrandLockup(height = 26.dp, isDarkTheme = false)
 
         // Right: Notification Bell Button with alert dot
         Surface(
