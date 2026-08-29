@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.trueline_listener.network.ChatMessageData
 import com.example.trueline_listener.ui.theme.*
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,14 @@ fun ListenerIndividualChatScreen(viewModel: MainPortalViewModel) {
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    // Periodically refresh presence status while individual chat is open
+    LaunchedEffect(partnerId) {
+        while (true) {
+            viewModel.fetchConversations()
+            delay(3000)
         }
     }
 
