@@ -45,6 +45,12 @@ fun ListenerIndividualChatScreen(viewModel: MainPortalViewModel) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        if (messages.isNotEmpty()) {
+            listState.scrollToItem(messages.size - 1)
+        }
+    }
+
     // Periodically refresh presence status while individual chat is open
     LaunchedEffect(partnerId) {
         while (true) {
