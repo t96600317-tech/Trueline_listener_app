@@ -23,13 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
-data class OnlineCallerAvatar(
-    val userId: String,
-    val userName: String,
-    val avatarText: String,
-    val labelText: String
-)
-
 data class ChatDisplayItem(
     val userId: String,
     val avatarText: String,
@@ -44,7 +37,6 @@ data class ChatDisplayItem(
 @Composable
 fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
-    val onlineScrollState = rememberScrollState()
     val filterScrollState = rememberScrollState()
     val currentFilter = viewModel.selectedChatFilter
 
@@ -57,16 +49,8 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
         }
     }
 
-    val onlineCallers = listOf(
-        OnlineCallerAvatar("user_8f21", "Caller 8f21", "8F", "8f"),
-        OnlineCallerAvatar("user_2c07", "Caller 2c07", "2C", "2c"),
-        OnlineCallerAvatar("user_6b93", "Caller 6b93", "6B", "6b"),
-        OnlineCallerAvatar("user_d1f8", "Caller d1f8", "D1", "d1"),
-        OnlineCallerAvatar("user_7e20", "Caller 7e20", "7E", "7e")
-    )
-
-    // Build chat items from server conversations or default mock conversations
-    val serverChats = viewModel.conversations.map { conv ->
+    // Build chat items from server conversations
+    val combinedChats = viewModel.conversations.map { conv ->
         val effectiveUserId = conv.user_id.ifBlank { conv.listener_id }
         val name = conv.user_name.ifBlank { conv.listener_name.ifBlank { "user${effectiveUserId.takeLast(6)}" } }
         ChatDisplayItem(
@@ -80,67 +64,6 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else ChatFilter.ALL
         )
     }
-
-    val fallbackChats = listOf(
-        ChatDisplayItem(
-            userId = "user_8f21",
-            avatarText = "8F",
-            callerTitle = "caller 8f21 · regular",
-            lastMessage = "Voice note · 0:14",
-            timestamp = "9:14 PM",
-            unreadCount = 2,
-            isRegular = true,
-            filterType = ChatFilter.UNREAD
-        ),
-        ChatDisplayItem(
-            userId = "user_2c07",
-            avatarText = "2C",
-            callerTitle = "caller 2c07",
-            lastMessage = "thank you for today, felt lighter",
-            timestamp = "9:12 PM",
-            unreadCount = 0,
-            filterType = ChatFilter.ALL
-        ),
-        ChatDisplayItem(
-            userId = "user_6b93",
-            avatarText = "6B",
-            callerTitle = "caller 6b93",
-            lastMessage = "call me tomorrow same time?",
-            timestamp = "9:11 PM",
-            unreadCount = 1,
-            filterType = ChatFilter.NEEDS_REPLY
-        ),
-        ChatDisplayItem(
-            userId = "user_d1f8",
-            avatarText = "D1",
-            callerTitle = "caller d1f8 · regular",
-            lastMessage = "Voice note · 0:38",
-            timestamp = "8:52 PM",
-            unreadCount = 0,
-            isRegular = true,
-            filterType = ChatFilter.REGULARS
-        ),
-        ChatDisplayItem(
-            userId = "user_4a55",
-            avatarText = "4A",
-            callerTitle = "caller 4a55",
-            lastMessage = "sorry i missed the call",
-            timestamp = "7:20 PM",
-            unreadCount = 0,
-            filterType = ChatFilter.ALL
-        ),
-        ChatDisplayItem(
-            userId = "user_7e20",
-            avatarText = "7E",
-            callerTitle = "caller 7e20",
-            lastMessage = "ok didi, good night",
-            timestamp = "6:15 PM",
-            unreadCount = 0,
-            filterType = ChatFilter.ALL
-        )
-    )
-
-    val combinedChats = if (serverChats.isNotEmpty()) serverChats else fallbackChats
 
     // Apply Search Query filter
     val searchFiltered = if (viewModel.chatSearchQuery.isBlank()) {
@@ -188,8 +111,10 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                     .size(36.dp)
                     .clip(CircleShape)
                     .clickable {
-                        // Open chat with first caller or new contact
-                        viewModel.openChat("user_8f21", "Caller 8f21")
+                        val firstChat = combinedChats.firstOrNull()
+                        if (firstChat != null) {
+                            viewModel.openChat(firstChat.userId, firstChat.callerTitle)
+                        }
                     },
                 shape = CircleShape,
                 color = Color(0xFF134E4A)
@@ -236,80 +161,9 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. ONLINE NOW Section Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "• ONLINE NOW",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F766E),
-                letterSpacing = 0.8.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // ONLINE NOW Avatars Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(onlineScrollState),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            onlineCallers.forEach { caller ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable {
-                        viewModel.openChat(caller.userId, caller.userName)
-                    }
-                ) {
-                    Box {
-                        Surface(
-                            modifier = Modifier.size(46.dp),
-                            shape = CircleShape,
-                            color = Color(0xFFE2ECE9)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = caller.avatarText,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF334155)
-                                )
-                            }
-                        }
-                        // Green Online Dot Badge
-                        Surface(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .align(Alignment.BottomEnd),
-                            shape = CircleShape,
-                            color = Color(0xFF0F766E),
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
-                        ) {}
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = caller.labelText,
-                        fontSize = 11.5.sp,
-                        color = Color(0xFF64748B),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 4. Filter Chips Row
+        // 3. Filter Chips Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
