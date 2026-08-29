@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -18,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,10 +73,11 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val searchFiltered = if (viewModel.chatSearchQuery.isBlank()) {
         combinedChats
     } else {
-        val query = viewModel.chatSearchQuery.lowercase()
+        val query = viewModel.chatSearchQuery.trim().lowercase()
         combinedChats.filter {
             it.callerTitle.lowercase().contains(query) ||
-            it.lastMessage.lowercase().contains(query)
+            it.lastMessage.lowercase().contains(query) ||
+            it.userId.lowercase().contains(query)
         }
     }
 
@@ -132,7 +137,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Search Bar
+        // 2. Search Bar - Fully Interactive Text Input
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -152,12 +157,40 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = if (viewModel.chatSearchQuery.isBlank()) "Search chats" else viewModel.chatSearchQuery,
-                    fontSize = 14.sp,
-                    color = if (viewModel.chatSearchQuery.isBlank()) Color(0xFF94A3B8) else Color(0xFF0F172A),
-                    fontWeight = FontWeight.Medium
+                BasicTextField(
+                    value = viewModel.chatSearchQuery,
+                    onValueChange = { viewModel.updateChatSearchQuery(it) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color(0xFF0F172A),
+                        fontWeight = FontWeight.Medium
+                    ),
+                    cursorBrush = SolidColor(Color(0xFF134E4A)),
+                    decorationBox = { innerTextField ->
+                        if (viewModel.chatSearchQuery.isBlank()) {
+                            Text(
+                                text = "Search chats",
+                                fontSize = 14.sp,
+                                color = Color(0xFF94A3B8),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        innerTextField()
+                    }
                 )
+                if (viewModel.chatSearchQuery.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Clear Search",
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable { viewModel.updateChatSearchQuery("") }
+                    )
+                }
             }
         }
 
