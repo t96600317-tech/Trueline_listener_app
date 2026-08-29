@@ -15,76 +15,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.trueline_listener.network.CallLogHistoryItem
 import com.example.trueline_listener.ui.theme.*
 
-data class CallLogItem(
-    val avatarText: String,
-    val callerName: String,
-    val isMissed: Boolean,
-    val timestampDetails: String,
-    val amountStr: String,
-    val isNegative: Boolean,
-    val isPeachAvatar: Boolean = false
-)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallLogScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
 
-    val todayCalls = listOf(
-        CallLogItem(
-            avatarText = "8F",
-            callerName = "caller 8f21 · Hindi",
-            isMissed = false,
-            timestampDetails = "9:08 PM · 11 min 04 s · ★ 5",
-            amountStr = "₹49.50",
-            isNegative = false
-        ),
-        CallLogItem(
-            avatarText = "2C",
-            callerName = "caller 2c07 · Hindi",
-            isMissed = false,
-            timestampDetails = "7:41 PM · 6 min 12 s · ★ 5",
-            amountStr = "₹27.40",
-            isNegative = false
-        ),
-        CallLogItem(
-            avatarText = "4A",
-            callerName = "caller 4a55 · missed",
-            isMissed = true,
-            timestampDetails = "6:20 PM · rang 50 s",
-            amountStr = "- ₹10",
-            isNegative = true,
-            isPeachAvatar = true
-        ),
-        CallLogItem(
-            avatarText = "6B",
-            callerName = "caller 6b93 · Hindi",
-            isMissed = false,
-            timestampDetails = "4:02 PM · 9 min 31 s · ★ 4",
-            amountStr = "₹41.80",
-            isNegative = false
-        )
-    )
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.fetchCallHistory()
+    }
 
-    val yesterdayCalls = listOf(
-        CallLogItem(
-            avatarText = "D1",
-            callerName = "caller d1f8 · Hindi",
-            isMissed = false,
-            timestampDetails = "10:14 PM · 14 min 02 s · ★ 5",
-            amountStr = "₹63.10",
-            isNegative = false
-        ),
-        CallLogItem(
-            avatarText = "7E",
-            callerName = "caller 7e20 · Hindi",
-            isMissed = false,
-            timestampDetails = "9:36 PM · 5 min 48 s · ★ 5",
-            amountStr = "₹26.10",
-            isNegative = false
-        )
-    )
+    val history = viewModel.callHistoryData
+    val allCalls = history?.calls ?: emptyList()
+    val todayCalls = allCalls.filter { it.section == "TODAY" }
+    val yesterdayCalls = allCalls.filter { it.section == "YESTERDAY" }
+    val earlierCalls = allCalls.filter { it.section == "EARLIER" }
+
+    val answeredCount = history?.total_answered ?: 0
+    val avgDuration = history?.avg_duration_min ?: 0.0
+    val ratingDisplay = if ((history?.rating_count ?: 0) > 0) {
+        history?.avg_rating?.toString() ?: "-.-"
+    } else {
+        "-.-"
+    }
 
     Column(
         modifier = Modifier
@@ -132,87 +87,172 @@ fun CallLogScreen(viewModel: MainPortalViewModel) {
             CallStatCard(
                 modifier = Modifier.weight(1f),
                 title = "ANSWERED",
-                value = "57"
+                value = answeredCount.toString()
             )
             CallStatCard(
                 modifier = Modifier.weight(1f),
                 title = "AVG MIN",
-                value = "6.4"
+                value = avgDuration.toString()
             )
             CallStatCard(
                 modifier = Modifier.weight(1f),
                 title = "RATING",
-                value = "4.8"
+                value = ratingDisplay
             )
         }
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        // 3. TODAY Section Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "TODAY",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF94A3B8),
-                letterSpacing = 0.8.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 4. TODAY Group Card Container
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-        ) {
-            Column {
-                todayCalls.forEachIndexed { index, item ->
-                    CallLogRowItem(item = item)
-                    if (index < todayCalls.lastIndex) {
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
-                    }
+        if (viewModel.isCallHistoryLoading && allCalls.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = Color(0xFF134E4A)
+                )
+            }
+        } else if (allCalls.isEmpty()) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 36.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No calls yet",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "When users call you on TrueLine, your call records and earnings will appear here.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 18.sp
+                    )
                 }
             }
-        }
+        } else {
+            // 3. TODAY Section
+            if (todayCalls.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "TODAY",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8),
+                        letterSpacing = 0.8.sp
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-        // 5. YESTERDAY Section Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "YESTERDAY",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF94A3B8),
-                letterSpacing = 0.8.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 6. YESTERDAY Group Card Container
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-        ) {
-            Column {
-                yesterdayCalls.forEachIndexed { index, item ->
-                    CallLogRowItem(item = item)
-                    if (index < yesterdayCalls.lastIndex) {
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column {
+                        todayCalls.forEachIndexed { index, item ->
+                            CallLogRowItem(item = item)
+                            if (index < todayCalls.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(22.dp))
+            }
+
+            // 4. YESTERDAY Section
+            if (yesterdayCalls.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "YESTERDAY",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8),
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column {
+                        yesterdayCalls.forEachIndexed { index, item ->
+                            CallLogRowItem(item = item)
+                            if (index < yesterdayCalls.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
+            }
+
+            // 5. EARLIER Section
+            if (earlierCalls.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "EARLIER",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8),
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column {
+                        earlierCalls.forEachIndexed { index, item ->
+                            CallLogRowItem(item = item)
+                            if (index < earlierCalls.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
             }
         }
 
@@ -254,7 +294,7 @@ private fun CallStatCard(
 }
 
 @Composable
-private fun CallLogRowItem(item: CallLogItem) {
+private fun CallLogRowItem(item: CallLogHistoryItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,14 +310,14 @@ private fun CallLogRowItem(item: CallLogItem) {
             Surface(
                 modifier = Modifier.size(42.dp),
                 shape = CircleShape,
-                color = if (item.isPeachAvatar) Color(0xFFFEE2E2) else Color(0xFFE2ECE9)
+                color = if (item.is_peach_avatar) Color(0xFFFEE2E2) else Color(0xFFE2ECE9)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = item.avatarText,
+                        text = item.avatar_text,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (item.isPeachAvatar) Color(0xFF991B1B) else Color(0xFF334155)
+                        color = if (item.is_peach_avatar) Color(0xFF991B1B) else Color(0xFF334155)
                     )
                 }
             }
@@ -286,14 +326,14 @@ private fun CallLogRowItem(item: CallLogItem) {
 
             Column {
                 Text(
-                    text = item.callerName,
+                    text = item.caller_name,
                     fontSize = 14.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = item.timestampDetails,
+                    text = item.timestamp_details,
                     fontSize = 12.sp,
                     color = Color(0xFF94A3B8),
                     fontWeight = FontWeight.Medium
@@ -305,10 +345,10 @@ private fun CallLogRowItem(item: CallLogItem) {
 
         // Right earnings/penalty amount
         Text(
-            text = item.amountStr,
+            text = item.amount_str,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = if (item.isNegative) Color(0xFFEA580C) else Color(0xFF0F172A)
+            color = if (item.is_negative) Color(0xFFEA580C) else Color(0xFF0F172A)
         )
     }
 }

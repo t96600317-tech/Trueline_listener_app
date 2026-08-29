@@ -154,3 +154,27 @@ data class ChatMessageData(
 data class SendMessageRequest(
     val content: String
 )
+
+@Serializable
+data class CallLogHistoryItem(
+    val id: String = "",
+    val avatar_text: String = "US",
+    val caller_name: String = "",
+    val is_missed: Boolean = false,
+    val timestamp_details: String = "",
+    val amount_str: String = "₹0",
+    val is_negative: Boolean = false,
+    val is_peach_avatar: Boolean = false,
+    val section: String = "TODAY",
+    val created_at: String = ""
+)
+
+@Serializable
+data class CallHistoryResponse(
+    val total_answered: Int = 0,
+    val avg_duration_min: Double = 0.0,
+    val avg_rating: Double = 0.0,
+    val rating_count: Int = 0,
+    val calls: List<CallLogHistoryItem> = emptyList()
+)
+

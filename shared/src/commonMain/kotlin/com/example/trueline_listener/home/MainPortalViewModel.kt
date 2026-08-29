@@ -149,6 +149,10 @@ class MainPortalViewModel(
     var currentChatMessages = androidx.compose.runtime.mutableStateListOf<ChatMessageData>()
     var isChatMessagesLoading by mutableStateOf(false)
 
+    // Call History States
+    var callHistoryData by mutableStateOf<CallHistoryResponse?>(null)
+    var isCallHistoryLoading by mutableStateOf(false)
+
     // Incoming Call States
     var incomingCallSession by mutableStateOf<CallSessionData?>(null)
         private set
@@ -162,6 +166,9 @@ class MainPortalViewModel(
     fun selectTab(tab: PortalTab) {
         currentTab = tab
         activeSubScreen = PortalSubScreen.NONE
+        if (tab == PortalTab.CALLS) {
+            fetchCallHistory()
+        }
     }
 
     fun openSubScreen(screen: PortalSubScreen) {
@@ -184,8 +191,20 @@ class MainPortalViewModel(
         showMilestoneChecklist = false
     }
 
+    fun fetchCallHistory() {
+        isCallHistoryLoading = true
+        scope.launch {
+            val res = repository.getCallHistory()
+            isCallHistoryLoading = false
+            if (res.success && res.data != null) {
+                callHistoryData = res.data
+            }
+        }
+    }
+
     fun refreshAllData() {
         isLoading = true
+        fetchCallHistory()
         scope.launch {
             val dashRes = repository.getHomeDashboard()
             if (dashRes.success && dashRes.data != null) {
