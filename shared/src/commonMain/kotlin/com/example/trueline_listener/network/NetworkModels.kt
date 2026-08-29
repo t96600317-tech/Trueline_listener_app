@@ -135,7 +135,8 @@ data class ChatConversationData(
     val last_message: String = "",
     val last_message_sender: String = "",
     val last_message_time: String = "",
-    val unread_count: Int = 0
+    val unread_count: Int = 0,
+    val is_regular: Boolean = false
 )
 
 @Serializable

@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ data class ChatDisplayItem(
     val timestamp: String,
     val unreadCount: Int = 0,
     val isRegular: Boolean = false,
+    val lastMessageSender: String = "",
     val filterType: ChatFilter
 )
 
@@ -62,15 +64,17 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val combinedChats = viewModel.conversations.map { conv ->
         val effectiveUserId = conv.user_id.ifBlank { conv.listener_id }
         val name = conv.user_name.ifBlank { conv.listener_name.ifBlank { "user${effectiveUserId.takeLast(6)}" } }
+        val isRegular = conv.is_regular
         ChatDisplayItem(
             userId = effectiveUserId,
             avatarText = name.take(2).uppercase().ifBlank { "U" },
-            callerTitle = name,
+            callerTitle = if (isRegular) "$name · regular" else name,
             lastMessage = conv.last_message.ifBlank { "Tap to chat" },
             timestamp = com.example.trueline_listener.formatTimestamp(conv.last_message_time).ifBlank { "Just now" },
             unreadCount = conv.unread_count,
-            isRegular = true,
-            filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else ChatFilter.ALL
+            isRegular = isRegular,
+            lastMessageSender = conv.last_message_sender,
+            filterType = if (conv.unread_count > 0) ChatFilter.UNREAD else if (isRegular) ChatFilter.REGULARS else ChatFilter.ALL
         )
     }
 
@@ -91,7 +95,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
         ChatFilter.ALL -> searchFiltered
         ChatFilter.UNREAD -> searchFiltered.filter { it.unreadCount > 0 }
         ChatFilter.REGULARS -> searchFiltered.filter { it.isRegular }
-        ChatFilter.NEEDS_REPLY -> searchFiltered.filter { it.unreadCount > 0 || it.filterType == ChatFilter.NEEDS_REPLY }
+        ChatFilter.NEEDS_REPLY -> searchFiltered.filter { it.unreadCount > 0 || it.lastMessageSender == "user" }
     }
 
     Column(
@@ -261,14 +265,36 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
+                            .padding(vertical = 36.dp, horizontal = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "No messages in this category",
-                            fontSize = 13.sp,
-                            color = Color(0xFF64748B)
-                        )
+                        val emptyMessage = when (currentFilter) {
+                            ChatFilter.ALL -> "No conversations yet"
+                            ChatFilter.UNREAD -> "No unread messages"
+                            ChatFilter.REGULARS -> "No regulars yet"
+                            ChatFilter.NEEDS_REPLY -> "No replies needed"
+                        }
+                        val emptySubtext = when (currentFilter) {
+                            ChatFilter.ALL -> "When users message you, their chats will appear here."
+                            ChatFilter.UNREAD -> "You're all caught up with your messages."
+                            ChatFilter.REGULARS -> "Callers who connect with you frequently will appear here."
+                            ChatFilter.NEEDS_REPLY -> "All user queries have been answered."
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = emptyMessage,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF334155)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = emptySubtext,
+                                fontSize = 12.5.sp,
+                                color = Color(0xFF94A3B8),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 } else {
                     filteredChats.forEachIndexed { index, item ->
