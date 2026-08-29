@@ -181,19 +181,30 @@ fun TransactionsScreen(viewModel: MainPortalViewModel) {
                             .padding(horizontal = 24.dp, vertical = 36.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        val emptyTitle = when (currentFilter) {
+                            TransactionFilter.CALLS -> "No call earnings yet"
+                            TransactionFilter.BONUS -> "No bonus earned yet"
+                            TransactionFilter.PAYOUT -> "No payouts requested yet"
+                            TransactionFilter.PENALTY -> "No penalties applied"
+                            else -> "No transactions yet"
+                        }
+                        val emptySubtitle = when (currentFilter) {
+                            TransactionFilter.CALLS -> "When you receive and complete calls with users, your earnings will appear here."
+                            TransactionFilter.BONUS -> "Complete 500+ total call minutes across all users in a week to earn the ₹150 Weekly Volume Bonus."
+                            TransactionFilter.PAYOUT -> "When you request payouts to your UPI account, your payout history will appear here."
+                            TransactionFilter.PENALTY -> "You have 0 penalties. Always answer calls promptly when online."
+                            else -> "When you complete calls, earn weekly bonuses, or request payouts, they will appear here."
+                        }
+
                         Text(
-                            text = if (currentFilter == TransactionFilter.CALLS) "No call earnings yet" else "No transactions yet",
+                            text = emptyTitle,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (currentFilter == TransactionFilter.CALLS) {
-                                "When you receive and complete calls with users, your earnings will appear here."
-                            } else {
-                                "When you complete calls, receive bonuses, or request payouts, they will appear here."
-                            },
+                            text = emptySubtitle,
                             fontSize = 13.sp,
                             color = Color(0xFF64748B),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
