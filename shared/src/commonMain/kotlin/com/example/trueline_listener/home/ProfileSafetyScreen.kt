@@ -163,7 +163,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
         SupportAndSafetyCard(
             onSupportClick = { viewModel.openSubScreen(PortalSubScreen.SUPPORT_INFO) },
             onPayoutMethodClick = { viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS) },
-            onDeleteAccountClick = { showLogoutConfirmation = true }
+            onLogoutClick = { showLogoutConfirmation = true }
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -175,13 +175,13 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
         VoiceUpdateModal(viewModel = viewModel)
     }
 
-    // Delete / Logout Dialog Confirmation
+    // Logout Dialog Confirmation
     if (showLogoutConfirmation) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirmation = false },
             title = {
                 Text(
-                    text = "Account Action",
+                    text = "Log Out",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = Color(0xFF0F172A)
@@ -189,7 +189,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
             },
             text = {
                 Text(
-                    text = "Would you like to log out or request account deletion? Contact support for complete deletion.",
+                    text = "Are you sure you want to log out of your TrueLine Listener account?",
                     fontSize = 14.sp,
                     color = Color(0xFF64748B),
                     lineHeight = 20.sp
@@ -405,7 +405,7 @@ private fun PillChip(
 private fun SupportAndSafetyCard(
     onSupportClick: () -> Unit,
     onPayoutMethodClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit
+    onLogoutClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -431,9 +431,9 @@ private fun SupportAndSafetyCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             MenuArrowRow(
-                title = "Delete account",
+                title = "Logout",
                 isWarning = true,
-                onClick = onDeleteAccountClick
+                onClick = onLogoutClick
             )
         }
     }
