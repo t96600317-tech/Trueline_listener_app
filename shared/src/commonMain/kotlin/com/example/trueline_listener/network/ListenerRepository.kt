@@ -550,14 +550,16 @@ data class RecentCallItem(
 @Serializable
 data class HomeDashboardResponse(
     val listener_name: String = "",
-    val listener_id_tag: String = "TL-P-00214",
+    val listener_id_tag: String = "",
     val kyc_status: String = "approved",
     val availability: String = "offline",
     val today_earnings_coins: Double = 0.0,
     val today_minutes: Int = 0,
     val today_calls: Int = 0,
     val this_week_earnings_coins: Double = 0.0,
-    val rating_avg: Double = 4.8,
+    val rating_avg: Double = 0.0,
+    val rating_count: Int = 0,
+    val answer_rate_pct: Int = 0,
     val total_calls_count: Int = 0,
     val recent_calls: List<RecentCallItem> = emptyList()
 )
@@ -582,12 +584,12 @@ data class MilestonesHubResponse(
 
 @Serializable
 data class PerformanceScoreResponse(
-    val score: Int = 82,
-    val tier: String = "GOLD",
-    val rank_text: String = "Rank 7 of 54 listeners · updated weekly",
-    val repeat_callers_pct: Int = 78,
-    val answer_rate_pct: Int = 91,
-    val rating_score: Double = 4.8,
+    val score: Int = 0,
+    val tier: String = "BRONZE",
+    val rank_text: String = "Updated weekly based on active call hours and rating",
+    val repeat_callers_pct: Int = 0,
+    val answer_rate_pct: Int = 0,
+    val rating_score: Double = 0.0,
     val tips: List<String> = emptyList()
 )
 

@@ -22,6 +22,13 @@ import com.example.trueline_listener.ui.theme.*
 @Composable
 fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
+    val data = viewModel.dashboardData
+
+    val balanceStr = if (data.this_week_earnings_coins > 0) {
+        "₹${(data.this_week_earnings_coins * 100).toLong() / 100.0}"
+    } else {
+        "₹0.00"
+    }
 
     Column(
         modifier = Modifier
@@ -33,9 +40,9 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
     ) {
         // 1. WALLET BALANCE Card
         WalletBalanceCard(
-            balanceStr = "₹1,248.60",
-            weekStr = "WEEK 3",
-            payoutSubtext = "Weekly payout to UPI • Mon 24 Aug",
+            balanceStr = balanceStr,
+            weekStr = "WEEK 1",
+            payoutSubtext = "Weekly payout to UPI",
             onSeeDetailsClick = { viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS) }
         )
 
@@ -57,7 +64,7 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
 
         // 3. First-week guarantee Card
         FirstWeekGuaranteeCard(
-            completedCalls = 14,
+            completedCalls = data.total_calls_count,
             targetCalls = 20,
             onClick = { viewModel.showMilestones() }
         )
@@ -65,9 +72,10 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // 4. Daily streak Card
+        val dayNumber = if (data.total_calls_count > 0) 1 else 0
         DailyStreakCard(
-            dayNumber = 3,
-            completedDays = 4,
+            dayNumber = dayNumber,
+            completedDays = dayNumber,
             totalDays = 5,
             rewardText = "Go online 2 hours today for +₹40"
         )
@@ -76,6 +84,7 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
 
         // 5. Performance / Stats Card
         PerformanceStatsCard(
+            data = data,
             selectedTab = viewModel.selectedStatsTab,
             onTabSelected = { viewModel.selectStatsTab(it) }
         )
@@ -408,6 +417,7 @@ private fun DailyStreakCard(
 
 @Composable
 private fun PerformanceStatsCard(
+    data: com.example.trueline_listener.network.HomeDashboardResponse,
     selectedTab: PerformanceStatsTab,
     onTabSelected: (PerformanceStatsTab) -> Unit
 ) {
@@ -447,11 +457,23 @@ private fun PerformanceStatsCard(
             HorizontalDivider(color = Color(0xFFF1F5F9))
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Metrics depending on selectedTab
+            // Metrics depending on selectedTab using real data
             val (earningsStr, talkMinsStr, callsStr) = when (selectedTab) {
-                PerformanceStatsTab.TODAY -> Triple("₹214.80", "48.6", "9 · 1")
-                PerformanceStatsTab.YESTERDAY -> Triple("₹420.00", "92.0", "15 · 2")
-                PerformanceStatsTab.THIS_WEEK -> Triple("₹1,248.60", "284.0", "48 · 5")
+                PerformanceStatsTab.TODAY -> {
+                    val earn = if (data.today_earnings_coins > 0) "₹${(data.today_earnings_coins * 100).toLong() / 100.0}" else "₹0.00"
+                    val mins = "${data.today_minutes}.0"
+                    val calls = "${data.today_calls} · 0"
+                    Triple(earn, mins, calls)
+                }
+                PerformanceStatsTab.YESTERDAY -> {
+                    Triple("₹0.00", "0.0", "0 · 0")
+                }
+                PerformanceStatsTab.THIS_WEEK -> {
+                    val earn = if (data.this_week_earnings_coins > 0) "₹${(data.this_week_earnings_coins * 100).toLong() / 100.0}" else "₹0.00"
+                    val mins = "${data.today_minutes}.0"
+                    val calls = "${data.total_calls_count} · 0"
+                    Triple(earn, mins, calls)
+                }
             }
 
             // Row 1: Earnings

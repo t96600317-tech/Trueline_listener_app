@@ -31,6 +31,16 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
     val data = viewModel.dashboardData
     var showLogoutConfirmation by remember { mutableStateOf(false) }
 
+    val displayName = data.listener_name.ifBlank { "Listener" }
+    val initials = displayName.split(" ")
+        .filter { it.isNotBlank() }
+        .mapNotNull { it.firstOrNull()?.toString() }
+        .take(2)
+        .joinToString("")
+        .uppercase()
+        .ifBlank { "TL" }
+    val idTag = data.listener_id_tag.ifBlank { "ID 40219" }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,7 +68,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = "PR",
+                                text = initials,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF475569)
@@ -70,7 +80,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
 
                     Column {
                         Text(
-                            text = data.listener_name.ifBlank { "Priya R." },
+                            text = displayName,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A)
@@ -87,7 +97,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
                             )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "Verified Listener · ID 40219",
+                                text = "Verified Listener · $idTag",
                                 fontSize = 12.5.sp,
                                 color = Color(0xFF334155),
                                 fontWeight = FontWeight.Medium
@@ -124,20 +134,30 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Rating Card
+            // Rating Card: Shows "-.-" if no rated calls yet, or average of last 50 calls
+            val ratingDisplay = if (data.rating_count > 0 && data.rating_avg > 0.0) {
+                "${data.rating_avg}"
+            } else {
+                "-.-"
+            }
             MetricStatCard(
                 modifier = Modifier.weight(1f),
                 title = "RATING",
-                value = "${data.rating_avg}",
+                value = ratingDisplay,
                 subtitle = "last 50 calls"
             )
 
-            // Answer Rate Card
+            // Answer Rate Card: Shows 0% if no calls yet, without target subtext
+            val answerRateDisplay = if (data.total_calls_count > 0) {
+                "${data.answer_rate_pct}%"
+            } else {
+                "0%"
+            }
             MetricStatCard(
                 modifier = Modifier.weight(1f),
                 title = "ANSWER RATE",
-                value = "94%",
-                subtitle = "target 90%"
+                value = answerRateDisplay,
+                subtitle = null
             )
         }
 
@@ -223,7 +243,7 @@ private fun MetricStatCard(
     modifier: Modifier,
     title: String,
     value: String,
-    subtitle: String
+    subtitle: String? = null
 ) {
     Surface(
         modifier = modifier,
@@ -231,7 +251,11 @@ private fun MetricStatCard(
         color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
             Text(
                 text = title,
                 fontSize = 11.sp,
@@ -246,12 +270,14 @@ private fun MetricStatCard(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = subtitle,
-                fontSize = 11.5.sp,
-                color = Color(0xFF94A3B8)
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF94A3B8)
+                )
+            }
         }
     }
 }

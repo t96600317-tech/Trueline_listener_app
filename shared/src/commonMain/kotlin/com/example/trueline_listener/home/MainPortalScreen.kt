@@ -202,8 +202,16 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
                 color = Color(0xFFE2E8F0)
             ) {
                 Box(contentAlignment = Alignment.Center) {
+                    val displayName = viewModel.dashboardData.listener_name.ifBlank { "Listener" }
+                    val initials = displayName.split(" ")
+                        .filter { it.isNotBlank() }
+                        .mapNotNull { it.firstOrNull()?.toString() }
+                        .take(2)
+                        .joinToString("")
+                        .uppercase()
+                        .ifBlank { "TL" }
                     Text(
-                        text = "PR",
+                        text = initials,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF475569)
