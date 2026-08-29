@@ -70,22 +70,23 @@ fun ListenerIndividualChatScreen(viewModel: MainPortalViewModel) {
 
                         Column {
                             Text(
-                                text = partnerName,
+                                text = partnerName.substringBefore(" ·").trim(),
                                 fontSize = 15.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0F172A)
                             )
+                            val isOnline = viewModel.activeChatUserOnline
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     modifier = Modifier.size(6.5.dp),
                                     shape = CircleShape,
-                                    color = Color(0xFF0F766E)
+                                    color = if (isOnline) Color(0xFF0F766E) else Color(0xFF94A3B8)
                                 ) {}
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Online",
+                                    text = if (isOnline) "Online" else "Offline",
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF64748B),
+                                    color = if (isOnline) Color(0xFF0F766E) else Color(0xFF64748B),
                                     fontWeight = FontWeight.Medium
                                 )
                             }

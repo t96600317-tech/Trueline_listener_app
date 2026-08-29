@@ -144,6 +144,7 @@ class MainPortalViewModel(
     var isChatListLoading by mutableStateOf(false)
     var activeChatUserId by mutableStateOf<String?>(null)
     var activeChatUserName by mutableStateOf("")
+    var activeChatUserOnline by mutableStateOf(false)
     var currentChatMessages = androidx.compose.runtime.mutableStateListOf<ChatMessageData>()
     var isChatMessagesLoading by mutableStateOf(false)
 
@@ -255,13 +256,21 @@ class MainPortalViewModel(
             if (res.success && res.data != null) {
                 conversations.clear()
                 conversations.addAll(res.data)
+                activeChatUserId?.let { currId ->
+                    val conv = res.data.firstOrNull { it.user_id == currId || it.listener_id == currId }
+                    if (conv != null) {
+                        activeChatUserOnline = conv.user_availability == "online" || conv.listener_availability == "online"
+                    }
+                }
             }
         }
     }
 
     fun openChat(userId: String, userName: String) {
         activeChatUserId = userId
-        activeChatUserName = userName
+        activeChatUserName = userName.substringBefore(" ·").trim()
+        val conv = conversations.firstOrNull { it.user_id == userId || it.listener_id == userId }
+        activeChatUserOnline = conv?.user_availability == "online" || conv?.listener_availability == "online"
         isChatMessagesLoading = true
         currentChatMessages.clear()
 
