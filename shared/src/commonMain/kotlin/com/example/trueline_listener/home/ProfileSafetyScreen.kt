@@ -147,7 +147,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
                 subtitle = "last 50 calls"
             )
 
-            // Answer Rate Card: Shows 0% if no calls yet, without target subtext
+            // Answer Rate Card: Shows 0% if no calls yet, with target 90% subtitle
             val answerRateDisplay = if (data.total_calls_count > 0) {
                 "${data.answer_rate_pct}%"
             } else {
@@ -157,7 +157,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
                 modifier = Modifier.weight(1f),
                 title = "ANSWER RATE",
                 value = answerRateDisplay,
-                subtitle = null
+                subtitle = "target 90%"
             )
         }
 
