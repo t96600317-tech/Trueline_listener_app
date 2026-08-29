@@ -108,8 +108,8 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     }
 
     PullToRefreshBox(
-        isRefreshing = viewModel.isChatListLoading,
-        onRefresh = { viewModel.fetchConversations() },
+        isRefreshing = viewModel.isPullToRefreshing,
+        onRefresh = { viewModel.fetchConversations(isManualPull = true) },
         modifier = Modifier.fillMaxSize()
     ) {
         Column(

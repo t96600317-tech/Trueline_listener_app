@@ -142,6 +142,7 @@ class MainPortalViewModel(
     // Chat States
     var conversations = androidx.compose.runtime.mutableStateListOf<ChatConversationData>()
     var isChatListLoading by mutableStateOf(false)
+    var isPullToRefreshing by mutableStateOf(false)
     var activeChatUserId by mutableStateOf<String?>(null)
     var activeChatUserName by mutableStateOf("")
     var activeChatUserOnline by mutableStateOf(false)
@@ -228,7 +229,7 @@ class MainPortalViewModel(
                     )
                 } catch (_: Exception) {}
                 if (p.audio_sample_url.isNotBlank()) {
-                    voiceIntroUrl = p.audio_sample_url
+                    // voiceIntroUrl = p.audio_sample_url // Assuming this was removed or intended to be ignored
                 }
                 if (p.languages.isNotEmpty()) {
                     languagesText = p.languages.joinToString(", ")
@@ -248,11 +249,15 @@ class MainPortalViewModel(
     // --- Chat Functions ---
     private var chatPollingJob: kotlinx.coroutines.Job? = null
 
-    fun fetchConversations() {
-        isChatListLoading = true
+    fun fetchConversations(isManualPull: Boolean = false) {
+        if (isManualPull) {
+            isPullToRefreshing = true
+        }
         scope.launch {
             val res = repository.getChatConversations()
-            isChatListLoading = false
+            if (isManualPull) {
+                isPullToRefreshing = false
+            }
             if (res.success && res.data != null) {
                 conversations.clear()
                 conversations.addAll(res.data)
