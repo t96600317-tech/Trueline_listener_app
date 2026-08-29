@@ -296,7 +296,8 @@ class MainPortalViewModel(
         chatPollingJob?.cancel()
         chatPollingJob = scope.launch {
             while (activeChatUserId == userId) {
-                delay(2500)
+                delay(2000)
+                fetchConversations()
                 val res = repository.getChatMessages(userId)
                 if (res.success && res.data != null) {
                     val serverMsgs = res.data
