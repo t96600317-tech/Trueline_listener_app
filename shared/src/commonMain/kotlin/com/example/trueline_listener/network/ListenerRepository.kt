@@ -490,6 +490,19 @@ class ListenerRepository(
         }
     }
 
+    suspend fun getTransactions(): ApiResponse<TransactionsResponse> {
+        return try {
+            executeWithFallback { host ->
+                client.get("${getBaseUrl(host)}/api/v1/listener/transactions") {
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to load transactions"))
+        }
+    }
+
+
 
     suspend fun submitReport(reason: String, details: String): ApiResponse<SimpleMessageResponse> {
         return try {

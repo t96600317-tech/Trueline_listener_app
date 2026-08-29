@@ -21,17 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.trueline_listener.network.TransactionItemData
 import com.example.trueline_listener.ui.theme.*
-
-data class TransactionDisplayItem(
-    val title: String,
-    val timestamp: String,
-    val amount: String,
-    val status: String,
-    val statusColor: Color,
-    val isPositive: Boolean,
-    val filterType: TransactionFilter
-)
 
 @Composable
 fun TransactionsScreen(viewModel: MainPortalViewModel) {
@@ -39,67 +30,22 @@ fun TransactionsScreen(viewModel: MainPortalViewModel) {
     val filterScrollState = rememberScrollState()
     val currentFilter = viewModel.selectedTransactionFilter
 
-    val allTransactions = listOf(
-        TransactionDisplayItem(
-            title = "Call · caller 8f21",
-            timestamp = "11:04 · 18 Aug, 9:08 PM",
-            amount = "+ ₹49.50",
-            status = "Pending",
-            statusColor = Color(0xFFEA580C), // Warm orange for pending
-            isPositive = true,
-            filterType = TransactionFilter.CALLS
-        ),
-        TransactionDisplayItem(
-            title = "Call · caller 2c07",
-            timestamp = "06:12 · 18 Aug, 7:41 PM",
-            amount = "+ ₹27.40",
-            status = "Cleared",
-            statusColor = Color(0xFF94A3B8),
-            isPositive = true,
-            filterType = TransactionFilter.CALLS
-        ),
-        TransactionDisplayItem(
-            title = "Streak bonus · Day 2",
-            timestamp = "18 Aug, 12:00 AM",
-            amount = "+ ₹40.00",
-            status = "Cleared",
-            statusColor = Color(0xFF94A3B8),
-            isPositive = true,
-            filterType = TransactionFilter.BONUS
-        ),
-        TransactionDisplayItem(
-            title = "Missed call penalty",
-            timestamp = "17 Aug, 10:22 PM",
-            amount = "- ₹10.00",
-            status = "Applied",
-            statusColor = Color(0xFF475569),
-            isPositive = false,
-            filterType = TransactionFilter.PENALTY
-        ),
-        TransactionDisplayItem(
-            title = "Call · caller 6b93",
-            timestamp = "09:31 · 17 Aug, 8:12 PM",
-            amount = "+ ₹41.80",
-            status = "Cleared",
-            statusColor = Color(0xFF94A3B8),
-            isPositive = true,
-            filterType = TransactionFilter.CALLS
-        ),
-        TransactionDisplayItem(
-            title = "Payout to UPI ••••3421",
-            timestamp = "17 Aug, 11:02 AM",
-            amount = "₹2,910.00",
-            status = "Paid",
-            statusColor = Color(0xFF94A3B8),
-            isPositive = false,
-            filterType = TransactionFilter.PAYOUT
-        )
-    )
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.fetchTransactions()
+    }
+
+    val allTransactions = viewModel.transactionsList
 
     val filteredList = when (currentFilter) {
         TransactionFilter.ALL -> allTransactions
-        else -> allTransactions.filter { it.filterType == currentFilter }
+        TransactionFilter.CALLS -> allTransactions.filter { it.filter_type == "CALLS" }
+        TransactionFilter.BONUS -> allTransactions.filter { it.filter_type == "BONUS" }
+        TransactionFilter.PAYOUT -> allTransactions.filter { it.filter_type == "PAYOUT" }
+        TransactionFilter.PENALTY -> allTransactions.filter { it.filter_type == "PENALTY" }
     }
+
+    // Group filtered transactions by month (preserving order)
+    val groupedByMonth = filteredList.groupBy { it.month_group }
 
     Column(
         modifier = Modifier
@@ -208,55 +154,92 @@ fun TransactionsScreen(viewModel: MainPortalViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. Month Section Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Text(
-                    text = "AUG 2026",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8),
-                    letterSpacing = 0.8.sp
-                )
-            }
+            if (viewModel.isTransactionsLoading && allTransactions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = Color(0xFF134E4A)
+                    )
+                }
+            } else if (filteredList.isEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 36.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (currentFilter == TransactionFilter.CALLS) "No call earnings yet" else "No transactions yet",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (currentFilter == TransactionFilter.CALLS) {
+                                "When you receive and complete calls with users, your earnings will appear here."
+                            } else {
+                                "When you complete calls, receive bonuses, or request payouts, they will appear here."
+                            },
+                            fontSize = 13.sp,
+                            color = Color(0xFF64748B),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            } else {
+                // 3. Render each month group
+                groupedByMonth.forEach { (monthName, items) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = monthName,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF94A3B8),
+                            letterSpacing = 0.8.sp
+                        )
+                    }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-            // 4. Transaction List Container Card
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-            ) {
-                Column {
-                    if (filteredList.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No transactions found for this filter",
-                                fontSize = 13.sp,
-                                color = Color(0xFF64748B)
-                            )
-                        }
-                    } else {
-                        filteredList.forEachIndexed { index, item ->
-                            TransactionRowItem(item = item)
-                            if (index < filteredList.lastIndex) {
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Column {
+                            items.forEachIndexed { index, item ->
+                                TransactionRowItem(item = item)
+                                if (index < items.lastIndex) {
+                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                                }
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // 5. Footer Notice
             Text(
@@ -296,7 +279,13 @@ private fun FilterPillChip(
 }
 
 @Composable
-private fun TransactionRowItem(item: TransactionDisplayItem) {
+private fun TransactionRowItem(item: TransactionItemData) {
+    val statusColor = when (item.status_color.lowercase()) {
+        "orange" -> Color(0xFFEA580C)
+        "green" -> Color(0xFF16A34A)
+        else -> Color(0xFF94A3B8)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -329,14 +318,14 @@ private fun TransactionRowItem(item: TransactionDisplayItem) {
                 text = item.amount,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (item.title.contains("penalty")) Color(0xFFC2410C) else if (item.isPositive) Color(0xFFEA580C) else Color(0xFF0F172A)
+                color = if (item.title.contains("penalty", ignoreCase = true)) Color(0xFFC2410C) else if (item.is_positive) Color(0xFFEA580C) else Color(0xFF0F172A)
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = item.status,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = item.statusColor
+                color = statusColor
             )
         }
     }

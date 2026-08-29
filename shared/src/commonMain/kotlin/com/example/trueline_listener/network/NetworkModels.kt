@@ -178,3 +178,23 @@ data class CallHistoryResponse(
     val calls: List<CallLogHistoryItem> = emptyList()
 )
 
+@Serializable
+data class TransactionItemData(
+    val id: String = "",
+    val title: String = "",
+    val timestamp: String = "",
+    val amount: String = "₹0.00",
+    val status: String = "Cleared",
+    val status_color: String = "gray",
+    val is_positive: Boolean = true,
+    val filter_type: String = "CALLS", // "CALLS", "BONUS", "PAYOUT", "PENALTY"
+    val month_group: String = "AUG 2026",
+    val created_at: String = ""
+)
+
+@Serializable
+data class TransactionsResponse(
+    val transactions: List<TransactionItemData> = emptyList()
+)
+
+

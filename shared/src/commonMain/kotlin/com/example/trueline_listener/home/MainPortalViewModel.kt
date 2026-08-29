@@ -153,6 +153,10 @@ class MainPortalViewModel(
     var callHistoryData by mutableStateOf<CallHistoryResponse?>(null)
     var isCallHistoryLoading by mutableStateOf(false)
 
+    // Transactions States
+    var transactionsList = androidx.compose.runtime.mutableStateListOf<TransactionItemData>()
+    var isTransactionsLoading by mutableStateOf(false)
+
     // Incoming Call States
     var incomingCallSession by mutableStateOf<CallSessionData?>(null)
         private set
@@ -173,6 +177,9 @@ class MainPortalViewModel(
 
     fun openSubScreen(screen: PortalSubScreen) {
         activeSubScreen = screen
+        if (screen == PortalSubScreen.TRANSACTIONS) {
+            fetchTransactions()
+        }
     }
 
     fun closeSubScreen() {
@@ -202,9 +209,22 @@ class MainPortalViewModel(
         }
     }
 
+    fun fetchTransactions() {
+        isTransactionsLoading = true
+        scope.launch {
+            val res = repository.getTransactions()
+            isTransactionsLoading = false
+            if (res.success && res.data != null) {
+                transactionsList.clear()
+                transactionsList.addAll(res.data.transactions)
+            }
+        }
+    }
+
     fun refreshAllData() {
         isLoading = true
         fetchCallHistory()
+        fetchTransactions()
         scope.launch {
             val dashRes = repository.getHomeDashboard()
             if (dashRes.success && dashRes.data != null) {
