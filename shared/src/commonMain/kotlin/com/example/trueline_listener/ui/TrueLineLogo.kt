@@ -1,25 +1,24 @@
 package com.example.trueline_listener.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.trueline_listener.ui.theme.Accent
-import com.example.trueline_listener.ui.theme.Primary
-import com.example.trueline_listener.ui.theme.TextPrimary
+import org.jetbrains.compose.resources.painterResource
+import trueline_listener.shared.generated.resources.Res
+import trueline_listener.shared.generated.resources.trueline_listener_lockup
 
 @Composable
 fun TrueLineLogoBadge(
@@ -102,7 +101,7 @@ fun TrueLineLogo(
 }
 
 /**
- * Pixel-accurate TrueLine Listener brand lockup matching trueline-listener-lockup-white-7080.png
+ * 100% Exact TrueLine Listener official brand lockup asset matching trueline-listener-lockup-white-7080.png
  */
 @Composable
 fun TrueLineBrandLockup(
@@ -110,55 +109,12 @@ fun TrueLineBrandLockup(
     height: Dp = 28.dp,
     isDarkTheme: Boolean = false
 ) {
-    Row(
-        modifier = modifier.height(height),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 1. Brand Waveform Icon Badge
-        TrueLineLogoBadge(size = height, isDarkTheme = isDarkTheme)
-
-        Spacer(modifier = Modifier.width((height.value * 0.25f).dp))
-
-        // 2. "TrueLine" Typography
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "True",
-                fontSize = (height.value * 0.62f).sp,
-                fontWeight = FontWeight.Black,
-                fontFamily = FontFamily.Serif,
-                color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
-                letterSpacing = (-0.5).sp
-            )
-            Text(
-                text = "Line",
-                fontSize = (height.value * 0.62f).sp,
-                fontWeight = FontWeight.Normal,
-                fontFamily = FontFamily.Serif,
-                color = if (isDarkTheme) Color(0xFF8AD1C9) else Color(0xFF286366),
-                letterSpacing = (-0.5).sp
-            )
-        }
-
-        Spacer(modifier = Modifier.width((height.value * 0.28f).dp))
-
-        // 3. "LISTENER" Pill Badge Container
-        Surface(
-            shape = RoundedCornerShape((height.value * 0.22f).dp),
-            color = if (isDarkTheme) Color(0x33FFFFFF) else Color(0xFFE2F1F0)
-        ) {
-            Text(
-                text = "LISTENER",
-                fontSize = (height.value * 0.33f).sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isDarkTheme) Color(0xFFCCECE8) else Color(0xFF134E4A),
-                letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(
-                    horizontal = (height.value * 0.25f).dp,
-                    vertical = (height.value * 0.08f).dp
-                )
-            )
-        }
-    }
+    Image(
+        painter = painterResource(Res.drawable.trueline_listener_lockup),
+        contentDescription = "TrueLine Listener",
+        contentScale = ContentScale.FillHeight,
+        modifier = modifier.height(height)
+    )
 }
 
 @Composable
