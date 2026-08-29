@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -21,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -43,6 +47,7 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
     val filterScrollState = rememberScrollState()
     val currentFilter = viewModel.selectedChatFilter
+    val focusManager = LocalFocusManager.current
 
     // Periodically refresh conversation list in background
     LaunchedEffect(Unit) {
@@ -147,14 +152,14 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 13.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = "Search",
                     tint = Color(0xFF94A3B8),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(19.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 BasicTextField(
@@ -162,34 +167,50 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                     onValueChange = { viewModel.updateChatSearchQuery(it) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                     textStyle = TextStyle(
-                        fontSize = 14.sp,
+                        fontSize = 14.5.sp,
                         color = Color(0xFF0F172A),
                         fontWeight = FontWeight.Medium
                     ),
                     cursorBrush = SolidColor(Color(0xFF134E4A)),
                     decorationBox = { innerTextField ->
-                        if (viewModel.chatSearchQuery.isBlank()) {
-                            Text(
-                                text = "Search chats",
-                                fontSize = 14.sp,
-                                color = Color(0xFF94A3B8),
-                                fontWeight = FontWeight.Medium
-                            )
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (viewModel.chatSearchQuery.isEmpty()) {
+                                Text(
+                                    text = "Search chats",
+                                    fontSize = 14.5.sp,
+                                    color = Color(0xFF94A3B8),
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+                            innerTextField()
                         }
-                        innerTextField()
                     }
                 )
-                if (viewModel.chatSearchQuery.isNotBlank()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Clear Search",
-                        tint = Color(0xFF94A3B8),
+                if (viewModel.chatSearchQuery.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
                         modifier = Modifier
-                            .size(18.dp)
-                            .clickable { viewModel.updateChatSearchQuery("") }
-                    )
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .clickable { viewModel.updateChatSearchQuery("") },
+                        shape = CircleShape,
+                        color = Color(0xFFE2E8F0)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = "Clear Search",
+                                tint = Color(0xFF475569),
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
