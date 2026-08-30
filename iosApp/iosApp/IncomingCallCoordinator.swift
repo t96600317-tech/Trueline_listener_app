@@ -88,6 +88,10 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
             let uuid = activeCallUUID
         else { return }
 
+        // The system CallKit answer action already reached the shared flow.
+        // A second programmatic transaction would be rejected by CallKit.
+        if isAccepted { return }
+
         let action = CXAnswerCallAction(call: uuid)
         callController.request(CXTransaction(action: action)) { _ in }
     }

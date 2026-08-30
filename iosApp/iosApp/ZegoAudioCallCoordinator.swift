@@ -99,10 +99,19 @@ final class ZegoAudioCallCoordinator: NSObject, ZegoEventHandler {
     func onRoomStreamUpdate(_ updateType: ZegoUpdateType, streamList: [ZegoStream], extendedData: [AnyHashable: Any]?, roomID: String) {
         guard roomID == self.roomID else { return }
         for stream in streamList {
+            // Do not play the listener's own published microphone stream; it
+            // causes audible echo in a two-person audio room.
+            guard stream.streamID != self.streamID else { continue }
             if updateType == .add {
                 engine?.startPlayingStream(stream.streamID, canvas: nil)
             } else {
                 engine?.stopPlayingStream(stream.streamID)
+                // End the native call screen when the customer leaves the
+                // one-to-one Zego room instead of leaving a stale call open.
+                DispatchQueue.main.async { [weak self] in
+                    self?.endCallFromNotification()
+                }
+                return
             }
         }
     }
