@@ -7,12 +7,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
 
-private const val INCOMING_CALL_CHANNEL_ID = "incoming_calls"
+// Notification-channel sound settings are immutable after creation. Use a new
+// silent channel so installs that previously used the audible channel stop
+// overlapping its sound with the explicit looping ringtone below.
+private const val INCOMING_CALL_CHANNEL_ID = "incoming_calls_silent_v2"
 private const val INCOMING_CALL_NOTIFICATION_ID = 72_001
 
 private var incomingCallContext: Context? = null
@@ -49,17 +51,13 @@ actual object IncomingCallAlert {
 private fun ensureIncomingCallChannel(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
-    val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-    val attributes = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-        .build()
     val channel = NotificationChannel(
         INCOMING_CALL_CHANNEL_ID,
         "Incoming calls",
         NotificationManager.IMPORTANCE_HIGH
     ).apply {
-        description = "Rings for incoming TrueLine voice calls"
-        setSound(ringtoneUri, attributes)
+        description = "Shows incoming TrueLine voice calls while the app plays the ringtone"
+        setSound(null, null)
         enableVibration(true)
         vibrationPattern = longArrayOf(0, 500, 700)
         lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -109,6 +107,7 @@ private fun showNotification(context: Context, callerName: String) {
         .setCategory(Notification.CATEGORY_CALL)
         .setPriority(Notification.PRIORITY_MAX)
         .setContentIntent(pendingIntent)
+        .setOnlyAlertOnce(true)
         .setAutoCancel(true)
         .setOngoing(true)
         .build()
