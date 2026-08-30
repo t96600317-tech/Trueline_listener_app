@@ -36,7 +36,7 @@ fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
     val data = viewModel.dashboardData
     var showLogoutConfirmation by remember { mutableStateOf(false) }
 
-    val displayName = data.listener_name.ifBlank { "Akshaya" }
+    val displayName = data.listener_name.ifBlank { "Zayan" }
     val initials = displayName.split(" ")
         .filter { it.isNotBlank() }
         .mapNotNull { it.firstOrNull()?.toString() }
