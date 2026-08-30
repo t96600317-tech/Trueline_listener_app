@@ -28,10 +28,15 @@ import com.example.trueline_listener.ui.theme.*
 @Composable
 fun ProfileSafetyScreen(viewModel: MainPortalViewModel) {
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshAllData()
+    }
+
     val data = viewModel.dashboardData
     var showLogoutConfirmation by remember { mutableStateOf(false) }
 
-    val displayName = data.listener_name.ifBlank { "Listener" }
+    val displayName = data.listener_name.ifBlank { "Akshaya" }
     val initials = displayName.split(" ")
         .filter { it.isNotBlank() }
         .mapNotNull { it.firstOrNull()?.toString() }

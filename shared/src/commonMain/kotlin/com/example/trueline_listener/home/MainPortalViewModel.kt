@@ -281,6 +281,13 @@ class MainPortalViewModel(
             val profileRes = repository.getMe()
             if (profileRes.success && profileRes.data != null) {
                 val p = profileRes.data
+                if (p.name.isNotBlank()) {
+                    val idSuffix = p.id.replace("-", "").takeLast(5).uppercase()
+                    dashboardData = dashboardData.copy(
+                        listener_name = p.name,
+                        listener_id_tag = "ID $idSuffix"
+                    )
+                }
                 try {
                     com.example.trueline_listener.call.getCallService().initialize(
                         628007464L,
