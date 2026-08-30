@@ -1,0 +1,132 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  android:
+    name: Android shared tests and debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run shared tests and build debug APK
+        run: ./gradlew :shared:testAndroidHostTest :androidApp:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload Android test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: listener-android-test-reports
+          path: |
+            shared/build/test-results/**
+            shared/build/reports/tests/**
+          if-no-files-found: warn
+
+      - name: Upload listener debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: listener-debug-apk
+          path: androidApp/build/outputs/apk/debug/androidApp-debug.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS shared tests and simulator build (advisory)
+    runs-on: macos-14
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run iOS shared tests
+        id: kotlin_ios_tests
+        continue-on-error: true
+        run: ./gradlew :shared:iosSimulatorArm64Test --no-daemon --stacktrace
+
+      - name: Build unsigned iOS simulator app
+        id: xcode_build
+        continue-on-error: true
+        run: >-
+          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp
+          -configuration Debug -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build
+
+      - name: Upload iOS test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: listener-ios-test-reports
+          path: |
+            shared/build/test-results/**
+            shared/build/reports/tests/**
+          if-no-files-found: warn
+
+      - name: Mark iOS readiness gap
+        if: steps.kotlin_ios_tests.outcome == 'failure' || steps.xcode_build.outcome == 'failure'
+        run: |
+          echo "iOS tests or build are not ready yet. This advisory job does not block Android delivery." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  appetize:
+    name: Upload debug APK to Appetize
+    if: github.event_name == 'workflow_dispatch'
+    needs: android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: listener-debug-apk
+          path: appetize-apk
+
+      - name: Upload the public Appetize build
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+          APPETIZE_PUBLIC_KEY: ${{ secrets.APPETIZE_LISTENER_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$APPETIZE_API_TOKEN" || -z "$APPETIZE_PUBLIC_KEY" ]]; then
+            echo "APPETIZE_API_TOKEN and APPETIZE_LISTENER_PUBLIC_KEY must be configured as repository secrets." >&2
+            exit 1
+          fi
+
+          curl --fail-with-body --request POST "https://api.appetize.io/v1/apps/$APPETIZE_PUBLIC_KEY" \
+            --header "X-API-KEY: $APPETIZE_API_TOKEN" \
+            --form "file=@appetize-apk/androidApp-debug.apk" \
+            --form "platform=android" \
+            --form "fileType=apk" \
+            --form "appPermissions.run=public" \
+            --form "note=${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+
+          echo "Appetize build updated: https://appetize.io/app/$APPETIZE_PUBLIC_KEY" >> "$GITHUB_STEP_SUMMARY"
