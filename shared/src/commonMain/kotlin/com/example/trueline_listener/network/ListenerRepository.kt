@@ -39,23 +39,28 @@ class ListenerRepository(
         }
     }
 
-    private val client = HttpClient {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 15000
-            connectTimeoutMillis = 2500
-            socketTimeoutMillis = 15000
-        }
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                coerceInputValues = true
-            })
-        }
-        install(WebSockets) {
-            contentConverter = KotlinxWebsocketSerializationConverter(Json)
-        }
-        install(Logging) {
-            level = LogLevel.INFO
+    // Delay platform networking setup until an API request is actually made.
+    // This lets shared state (including session storage) be used safely during
+    // iOS native tests and app launch before the network stack is needed.
+    private val client: HttpClient by lazy {
+        HttpClient {
+            install(HttpTimeout) {
+                requestTimeoutMillis = 15000
+                connectTimeoutMillis = 2500
+                socketTimeoutMillis = 15000
+            }
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    coerceInputValues = true
+                })
+            }
+            install(WebSockets) {
+                contentConverter = KotlinxWebsocketSerializationConverter(Json)
+            }
+            install(Logging) {
+                level = LogLevel.INFO
+            }
         }
     }
 
