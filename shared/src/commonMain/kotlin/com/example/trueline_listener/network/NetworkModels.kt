@@ -95,7 +95,8 @@ data class PayoutRequestPayload(
 @Serializable
 data class CallAcceptResponse(
     val listener_token: String = "",
-    val room_id: String = ""
+    val room_id: String = "",
+    val zego_user_id: String = ""
 )
 
 @Serializable

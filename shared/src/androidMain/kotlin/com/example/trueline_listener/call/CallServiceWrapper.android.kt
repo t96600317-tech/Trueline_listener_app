@@ -32,6 +32,7 @@ actual class CallServiceWrapper(private val context: Context) {
         targetUserId: String,
         targetUserName: String,
         token: String,
+        signedUserId: String,
         onCallEnd: () -> Unit
     ) {
         require(token.isNotBlank()) { "A Zego token is required to start a voice call" }
@@ -41,6 +42,12 @@ actual class CallServiceWrapper(private val context: Context) {
 
         if (currentUserId.isBlank()) {
             initialize(currentAppId, "listener_" + System.currentTimeMillis(), "Listener")
+        }
+
+        if (signedUserId.isNotBlank()) {
+            currentUserId = signedUserId.replace("-", "_")
+                .filter { it.isLetterOrDigit() || it == '_' }
+                .take(64)
         }
 
         launchDirectCall(roomId, safeTargetName, token)

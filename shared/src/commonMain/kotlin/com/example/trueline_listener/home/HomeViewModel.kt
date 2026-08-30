@@ -194,6 +194,7 @@ class HomeViewModel(
                 targetUserId = sid,
                 targetUserName = callerName,
                 token = callData.listener_token,
+                signedUserId = callData.zego_user_id,
                 onCallEnd = {
                     endActiveCall()
                 }

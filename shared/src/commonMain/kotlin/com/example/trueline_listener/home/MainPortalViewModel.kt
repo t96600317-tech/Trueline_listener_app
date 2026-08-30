@@ -515,6 +515,7 @@ class MainPortalViewModel(
                     targetUserId = session.caller_id.ifBlank { session.id },
                     targetUserName = session.caller_name.ifBlank { "User" },
                     token = callData.listener_token,
+                    signedUserId = callData.zego_user_id,
                     onCallEnd = {
                         scope.launch {
                             repository.endCall(session.id, "listener_hangup")
