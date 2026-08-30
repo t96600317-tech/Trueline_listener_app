@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.trueline_listener.network.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -429,9 +430,54 @@ class MainPortalViewModel(
         updateAvailabilityMode(newMode)
     }
 
+    var breakRemainingSeconds by mutableStateOf(0)
+        private set
+
+    var isBreakTimerActive by mutableStateOf(false)
+        private set
+
+    var showBreakOptionsModal by mutableStateOf(false)
+
+    private var breakTimerJob: Job? = null
+
+    fun startBreak(durationMinutes: Int) {
+        showBreakOptionsModal = false
+        updateAvailabilityMode(AvailabilityMode.BUSY)
+        breakTimerJob?.cancel()
+        if (durationMinutes > 0) {
+            breakRemainingSeconds = durationMinutes * 60
+            isBreakTimerActive = true
+            breakTimerJob = scope.launch {
+                while (breakRemainingSeconds > 0 && availabilityMode == AvailabilityMode.BUSY) {
+                    delay(1000)
+                    breakRemainingSeconds--
+                }
+                if (availabilityMode == AvailabilityMode.BUSY) {
+                    isBreakTimerActive = false
+                    updateAvailabilityMode(AvailabilityMode.ONLINE)
+                }
+            }
+        } else {
+            isBreakTimerActive = false
+            breakRemainingSeconds = 0
+        }
+    }
+
+    fun endBreak() {
+        breakTimerJob?.cancel()
+        isBreakTimerActive = false
+        breakRemainingSeconds = 0
+        updateAvailabilityMode(AvailabilityMode.ONLINE)
+    }
+
     fun updateAvailabilityMode(mode: AvailabilityMode) {
         availabilityMode = mode
         isOnline = (mode == AvailabilityMode.ONLINE)
+        if (mode != AvailabilityMode.BUSY) {
+            breakTimerJob?.cancel()
+            isBreakTimerActive = false
+            breakRemainingSeconds = 0
+        }
         if (isOnline) {
             startIncomingCallWatcher()
         } else {
