@@ -12,7 +12,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
@@ -120,10 +119,10 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        // 1. Header: All chats Title & Add (+) Action Button
+        // 1. Header: All chats Title
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -132,30 +131,6 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
             )
-
-            // Add (+) action button
-            Surface(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        val firstChat = combinedChats.firstOrNull()
-                        if (firstChat != null) {
-                            viewModel.openChat(firstChat.userId, firstChat.callerTitle)
-                        }
-                    },
-                shape = CircleShape,
-                color = Color(0xFF134E4A)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "New Chat",
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
