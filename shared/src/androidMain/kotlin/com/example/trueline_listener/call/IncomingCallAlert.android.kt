@@ -7,19 +7,17 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.Ringtone
+import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
 
-// Notification-channel sound settings are immutable after creation. Use a new
-// silent channel so installs that previously used the audible channel stop
-// overlapping its sound with the explicit looping ringtone below.
-private const val INCOMING_CALL_CHANNEL_ID = "incoming_calls_silent_v2"
+// Notification-channel sound settings are immutable after creation. This new
+// channel owns the ringtone, so the app never plays a second overlapping tone.
+private const val INCOMING_CALL_CHANNEL_ID = "incoming_calls_v3"
 private const val INCOMING_CALL_NOTIFICATION_ID = 72_001
 
 private var incomingCallContext: Context? = null
 private var activeSessionId: String? = null
-private var activeRingtone: Ringtone? = null
 
 fun initIncomingCallAlert(context: Context) {
     incomingCallContext = context.applicationContext
@@ -33,15 +31,12 @@ actual object IncomingCallAlert {
 
         stop()
         activeSessionId = sessionId
-        playRingtone(context)
         showNotification(context, callerName.ifBlank { "Customer" })
     }
 
     actual fun stop(sessionId: String?) {
         if (sessionId != null && activeSessionId != sessionId) return
 
-        activeRingtone?.stop()
-        activeRingtone = null
         activeSessionId = null
         incomingCallContext?.getSystemService(NotificationManager::class.java)
             ?.cancel(INCOMING_CALL_NOTIFICATION_ID)
@@ -56,23 +51,18 @@ private fun ensureIncomingCallChannel(context: Context) {
         "Incoming calls",
         NotificationManager.IMPORTANCE_HIGH
     ).apply {
-        description = "Shows incoming TrueLine voice calls while the app plays the ringtone"
-        setSound(null, null)
+        description = "Rings for incoming TrueLine voice calls"
+        setSound(
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                .build()
+        )
         enableVibration(true)
         vibrationPattern = longArrayOf(0, 500, 700)
         lockscreenVisibility = Notification.VISIBILITY_PUBLIC
     }
     context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-}
-
-private fun playRingtone(context: Context) {
-    val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-    activeRingtone = RingtoneManager.getRingtone(context, ringtoneUri)?.also { ringtone ->
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ringtone.isLooping = true
-        }
-        ringtone.play()
-    }
 }
 
 private fun showNotification(context: Context, callerName: String) {
