@@ -56,7 +56,9 @@ jobs:
 
   ios:
     name: iOS shared tests and simulator build (advisory)
-    runs-on: macos-15
+    # Compose 1.11's native Skiko binary links against the iOS 26 SDK.
+    # macos-15's Xcode 16 SDK cannot resolve those framework symbols.
+    runs-on: macos-26
     continue-on-error: true
 
     steps:
