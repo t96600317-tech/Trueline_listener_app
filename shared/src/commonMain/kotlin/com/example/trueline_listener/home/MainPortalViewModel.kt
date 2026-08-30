@@ -440,7 +440,7 @@ class MainPortalViewModel(
     fun updateAvailabilityMode(mode: AvailabilityMode) {
         availabilityMode = mode
         isOnline = (mode == AvailabilityMode.ONLINE)
-        if (isOnline) {
+        if (mode == AvailabilityMode.ONLINE || mode == AvailabilityMode.BUSY) {
             startIncomingCallWatcher()
         } else {
             stopIncomingCallWatcher()
@@ -468,7 +468,7 @@ class MainPortalViewModel(
         incomingCallWatcherJob?.cancel()
         incomingCallWatcherJob = scope.launch {
             while (true) {
-                if (isOnline) {
+                if (isOnline || availabilityMode == AvailabilityMode.BUSY) {
                     try {
                         val incRes = repository.checkIncomingCalls()
                         if (incRes.success && incRes.data != null) {
