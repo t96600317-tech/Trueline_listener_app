@@ -78,7 +78,7 @@ fun BreakOptionsModal(viewModel: MainPortalViewModel) {
                     onClick = { viewModel.startBreak(15) }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Option 2: 30 min Meal Break
                 BreakOptionCard(
@@ -89,18 +89,7 @@ fun BreakOptionsModal(viewModel: MainPortalViewModel) {
                     onClick = { viewModel.startBreak(30) }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Option 3: Manual Pause (Until I switch back)
-                BreakOptionCard(
-                    icon = "⏸️",
-                    title = "Pause Taking Calls",
-                    subtitle = "Stay on break until you switch back manually",
-                    badge = null,
-                    onClick = { viewModel.startBreak(0) }
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
                 // Cancel Button
                 TextButton(
@@ -139,12 +128,12 @@ private fun BreakOptionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
@@ -156,30 +145,37 @@ private fun BreakOptionCard(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = title,
-                        fontSize = 14.sp,
+                        fontSize = 14.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = Color(0xFF0F172A),
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     badge?.let {
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = Color(0xFFEA580C).copy(alpha = 0.12f)
                         ) {
                             Text(
                                 text = it,
-                                fontSize = 10.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFEA580C),
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = subtitle,
                     fontSize = 11.5.sp,
