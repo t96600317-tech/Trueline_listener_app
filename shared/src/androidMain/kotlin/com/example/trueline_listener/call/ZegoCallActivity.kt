@@ -26,6 +26,8 @@ class ZegoCallActivity : AppCompatActivity() {
     private var containerLayoutId: Int = 0
     private var isFragmentAttached = false
 
+    private var targetUserName: String = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -42,6 +44,7 @@ class ZegoCallActivity : AppCompatActivity() {
         userId = rawUserId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "listener_${System.currentTimeMillis()}" }.take(64)
         
         userName = (intent.getStringExtra("USER_NAME") ?: "Listener").trim().ifBlank { "Listener" }.take(64)
+        targetUserName = (intent.getStringExtra("TARGET_USER_NAME") ?: "User").trim().ifBlank { "User" }.take(64)
         
         val rawCallId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
         callId = rawCallId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "call_${System.currentTimeMillis()}" }.take(64)
@@ -77,6 +80,9 @@ class ZegoCallActivity : AppCompatActivity() {
                 turnOnCameraWhenJoining = false
                 turnOnMicrophoneWhenJoining = true
                 useSpeakerWhenJoining = true
+                topMenuBarConfig.isVisible = true
+                topMenuBarConfig.title = targetUserName
+                durationConfig.isVisible = true
             }
 
             val fragment = ZegoUIKitPrebuiltCallFragment.newInstance(
