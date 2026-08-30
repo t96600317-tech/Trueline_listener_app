@@ -3,6 +3,7 @@ package com.example.trueline_listener.home
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.trueline_listener.currentPlatformTimeMillis
 import com.example.trueline_listener.network.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -385,7 +386,7 @@ class MainPortalViewModel(
 
         // Optimistic UI display
         val optimisticMsg = ChatMessageData(
-            id = "temp_${System.currentTimeMillis()}",
+            id = "temp_${currentPlatformTimeMillis()}",
             user_id = targetId,
             partner_id = "",
             sender_type = "partner",

@@ -56,7 +56,7 @@ jobs:
 
   ios:
     name: iOS shared tests and simulator build (advisory)
-    runs-on: macos-14
+    runs-on: macos-15
     continue-on-error: true
 
     steps:

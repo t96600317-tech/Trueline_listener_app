@@ -16,4 +16,9 @@ class SharedLogicIOSTest {
     fun iosPlatformIdentificationIsAvailableToSharedCode() {
         assertTrue(getPlatform().name.contains("iOS"))
     }
+
+    @Test
+    fun iosProvidesAPlatformTimestampForOptimisticMessageIds() {
+        assertTrue(currentPlatformTimeMillis() > 0)
+    }
 }
