@@ -1,5 +1,5 @@
 package com.example.trueline_listener
 
-import platform.Foundation.NSDate
+import kotlin.time.Clock
 
-actual fun currentPlatformTimeMillis(): Long = (NSDate().timeIntervalSince1970 * 1_000).toLong()
+actual fun currentPlatformTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
