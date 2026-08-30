@@ -170,8 +170,15 @@ class MainPortalViewModel(
         private set
 
     private var incomingCallWatcherJob: kotlinx.coroutines.Job? = null
+    private var acceptingIncomingSessionId: String? = null
+    private var registeredVoipPushToken: String? = null
 
     init {
+        com.example.trueline_listener.call.IncomingCallAlert.setActionHandlers(
+            onAccept = ::acceptIncomingCall,
+            onDecline = ::declineIncomingCall
+        )
+        com.example.trueline_listener.call.IncomingCallAlert.setPushTokenUpdatedHandler(::registerIOSVoipPushToken)
         refreshAllData()
     }
 
@@ -457,6 +464,7 @@ class MainPortalViewModel(
     }
 
     fun startIncomingCallWatcher() {
+        registerIOSVoipPushToken()
         incomingCallWatcherJob?.cancel()
         incomingCallWatcherJob = scope.launch {
             while (true) {
@@ -473,11 +481,11 @@ class MainPortalViewModel(
                                     )
                                 }
                                 incomingCallSession = session
-                            } else {
+                            } else if (acceptingIncomingSessionId == null) {
                                 com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
                                 incomingCallSession = null
                             }
-                        } else {
+                        } else if (acceptingIncomingSessionId == null) {
                             com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
                             incomingCallSession = null
                         }
@@ -491,6 +499,17 @@ class MainPortalViewModel(
         }
     }
 
+    private fun registerIOSVoipPushToken() {
+        val deviceToken = com.example.trueline_listener.call.IncomingCallAlert.getPushToken()?.trim().orEmpty()
+        if (deviceToken.isBlank() || deviceToken == registeredVoipPushToken) return
+        scope.launch {
+            val result = repository.registerIOSVoIPDevice(deviceToken)
+            if (result.success) {
+                registeredVoipPushToken = deviceToken
+            }
+        }
+    }
+
     fun stopIncomingCallWatcher() {
         incomingCallWatcherJob?.cancel()
         incomingCallWatcherJob = null
@@ -500,12 +519,16 @@ class MainPortalViewModel(
 
     fun acceptIncomingCall() {
         val session = incomingCallSession ?: return
-        com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
+        if (acceptingIncomingSessionId == session.id) return
+        acceptingIncomingSessionId = session.id
+        com.example.trueline_listener.call.IncomingCallAlert.accept(session.id)
         incomingCallSession = null
         scope.launch {
             val res = repository.acceptCall(session.id)
             val callData = res.data
             if (!res.success || callData == null || callData.listener_token.isBlank() || callData.room_id.isBlank()) {
+                acceptingIncomingSessionId = null
+                com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                 errorMessage = res.error?.message ?: "Unable to get a secure voice-call token"
                 return@launch
             }
@@ -519,11 +542,15 @@ class MainPortalViewModel(
                     signedUserId = callData.zego_user_id,
                     onCallEnd = {
                         scope.launch {
+                            acceptingIncomingSessionId = null
+                            com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                             repository.endCall(session.id, "listener_hangup")
                             refreshAllData()
                         }
                     },
                     onCallStartFailed = { message ->
+                        acceptingIncomingSessionId = null
+                        com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                         errorMessage = message
                         scope.launch {
                             repository.endCall(session.id, "listener_connection_failed")
@@ -532,6 +559,8 @@ class MainPortalViewModel(
                     }
                 )
             } catch (e: Exception) {
+                acceptingIncomingSessionId = null
+                com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                 errorMessage = e.message ?: "Failed to start secure voice call"
             }
         }
@@ -539,6 +568,7 @@ class MainPortalViewModel(
 
     fun declineIncomingCall() {
         val session = incomingCallSession ?: return
+        acceptingIncomingSessionId = null
         com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
         incomingCallSession = null
         scope.launch {

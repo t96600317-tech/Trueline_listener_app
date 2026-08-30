@@ -173,6 +173,22 @@ class ListenerRepository(
         return ApiResponse(true, data = null)
     }
 
+    suspend fun registerIOSVoIPDevice(deviceToken: String): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
+        if (deviceToken.isBlank()) return ApiResponse(false, error = ApiError("INVALID_DEVICE_TOKEN", "Missing iOS VoIP device token"))
+        return try {
+            executeWithFallback { host ->
+                client.post("${getBaseUrl(host)}/api/v1/listener/devices/ios-voip") {
+                    contentType(ContentType.Application.Json)
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    setBody(mapOf("device_token" to deviceToken))
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to register iOS VoIP device"))
+        }
+    }
+
     suspend fun acceptCall(sessionId: String): ApiResponse<CallAcceptResponse> {
         val token = getAuthToken()
         if (token != null) {

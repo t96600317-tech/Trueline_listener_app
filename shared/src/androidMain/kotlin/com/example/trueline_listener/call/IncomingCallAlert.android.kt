@@ -41,6 +41,16 @@ actual object IncomingCallAlert {
         incomingCallContext?.getSystemService(NotificationManager::class.java)
             ?.cancel(INCOMING_CALL_NOTIFICATION_ID)
     }
+
+    actual fun accept(sessionId: String) {
+        stop(sessionId)
+    }
+
+    actual fun setActionHandlers(onAccept: () -> Unit, onDecline: () -> Unit) = Unit
+
+    actual fun setPushTokenUpdatedHandler(onTokenUpdated: () -> Unit) = Unit
+
+    actual fun getPushToken(): String? = null
 }
 
 private fun ensureIncomingCallChannel(context: Context) {

@@ -6,5 +6,11 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>TrueLine needs microphone access for voice calls and audio samples.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>remote-notification</string>
+		<string>voip</string>
+	</array>
 </dict>
 </plist>
