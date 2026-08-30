@@ -121,7 +121,7 @@
 			mainGroup = 0617DC300EBA95E259AE36DE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */,
+				C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FD9879FDA6385407DA02116E /* Products */;
@@ -175,21 +175,17 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/zegoim/ZegoExpressEngine-SPM.git";
-			requirement = {
-				kind = exactVersion;
-				version = 2.5.0;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ZegoExpressEngine;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		C1D32A4B6C7D8E9F00112235 /* ZegoExpressEngine */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */;
+			package = C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine */;
 			productName = ZegoExpressEngine;
 		};
 /* End XCSwiftPackageProductDependency section */

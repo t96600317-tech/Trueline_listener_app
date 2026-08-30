@@ -70,7 +70,11 @@ final class ZegoAudioCallCoordinator: NSObject, ZegoEventHandler {
         callViewController = screen
         presentingViewController()?.present(screen, animated: true)
 
-        engine = ZegoExpressEngine.createEngine(withAppID: appID, appSign: "", isTestEnv: false, scenario: .general, eventHandler: self)
+        let profile = ZegoEngineProfile()
+        profile.appID = appID
+        profile.appSign = ""
+        profile.scenario = .default
+        engine = ZegoExpressEngine.createEngine(with: profile, eventHandler: self)
         let config = ZegoRoomConfig()
         config.token = token
         config.isUserStatusNotify = true

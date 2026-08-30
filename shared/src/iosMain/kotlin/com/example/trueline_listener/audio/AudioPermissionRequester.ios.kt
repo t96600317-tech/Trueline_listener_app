@@ -6,5 +6,5 @@ import androidx.compose.runtime.Composable
 actual fun AudioPermissionRequester(
     content: @Composable (requestPermission: () -> Unit, hasPermission: Boolean) -> Unit
 ) {
-    content(requestPermission = {}, hasPermission = false)
+    content({}, false)
 }

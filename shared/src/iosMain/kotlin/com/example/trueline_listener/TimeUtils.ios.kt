@@ -17,7 +17,7 @@ actual fun formatTimestamp(isoString: String): String {
 
     val formatter = NSDateFormatter()
     formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
-    formatter.timeZone = NSTimeZone.timeZoneWithAbbreviation("UTC")
+    NSTimeZone.timeZoneWithAbbreviation("UTC")?.let { formatter.timeZone = it }
     val date = formatter.dateFromString(isoString)
     if (date != null) {
         val outFormatter = NSDateFormatter()
