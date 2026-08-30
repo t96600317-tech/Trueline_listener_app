@@ -19,6 +19,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.example.trueline_listener.ui.OnboardingProgressHeader
 import com.example.trueline_listener.ui.TrueLineWaveformLoader
 import com.example.trueline_listener.ui.theme.*
@@ -26,9 +30,19 @@ import com.example.trueline_listener.ui.theme.*
 @Composable
 fun KycDocumentScreen(viewModel: OnboardingViewModel) {
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                })
+            },
         color = Light
     ) {
         Column(
@@ -325,7 +339,7 @@ fun KycDocumentScreen(viewModel: OnboardingViewModel) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(100.dp))
             }
 
             // Bottom CTA

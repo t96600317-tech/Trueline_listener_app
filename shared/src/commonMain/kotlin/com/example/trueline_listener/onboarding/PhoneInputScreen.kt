@@ -32,6 +32,7 @@ fun PhoneInputScreen(viewModel: OnboardingViewModel) {
     Surface(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
                     focusManager.clearFocus()
