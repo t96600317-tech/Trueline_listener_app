@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TrueLine needs microphone access for voice calls and audio samples.</string>
 </dict>
 </plist>

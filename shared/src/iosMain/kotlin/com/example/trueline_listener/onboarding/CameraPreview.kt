@@ -20,3 +20,12 @@ actual fun CameraPreview(
         Text("Camera not supported on iOS yet", color = Color.White)
     }
 }
+
+@Composable
+actual fun FaceVerificationCamera(
+    modifier: Modifier,
+    viewModel: OnboardingViewModel,
+    onPhotoCaptured: (String) -> Unit
+) {
+    CameraPreview(modifier, onPhotoCaptured)
+}

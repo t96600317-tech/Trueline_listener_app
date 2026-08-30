@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C1D32A4B6C7D8E9F00112233 /* ZegoExpressEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C1D32A4B6C7D8E9F00112235 /* ZegoExpressEngine */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		FEC34D34F65B5FA810659D70 /* Trueline_listener.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Trueline_listener.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1D32A4B6C7D8E9F00112233 /* ZegoExpressEngine in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +90,7 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				C1D32A4B6C7D8E9F00112235 /* ZegoExpressEngine */,
 			);
 			productName = iosApp;
 			productReference = FEC34D34F65B5FA810659D70 /* Trueline_listener.app */;
@@ -114,6 +120,9 @@
 			);
 			mainGroup = 0617DC300EBA95E259AE36DE;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FD9879FDA6385407DA02116E /* Products */;
 			projectDirPath = "";
@@ -165,6 +174,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/zegoim/ZegoExpressEngine-SPM.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C1D32A4B6C7D8E9F00112235 /* ZegoExpressEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1D32A4B6C7D8E9F00112234 /* ZegoExpressEngine-SPM */;
+			productName = ZegoExpressEngine;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B370C7624FFCA660303D7249 /* Debug */ = {
