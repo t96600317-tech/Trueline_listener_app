@@ -4,6 +4,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.googleServices)
 }
 
 val localProperties = Properties().also { properties ->
@@ -33,6 +34,8 @@ dependencies {
     implementation(project(":shared"))
 
     implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
     implementation("com.github.ZEGOCLOUD:zego_uikit_signaling_plugin_android:+")
@@ -49,7 +52,7 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.example.trueline_listener"
+        applicationId = "com.nexvert.trueline_listner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

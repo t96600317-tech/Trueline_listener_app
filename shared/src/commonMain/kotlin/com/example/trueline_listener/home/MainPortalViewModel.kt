@@ -171,14 +171,14 @@ class MainPortalViewModel(
 
     private var incomingCallWatcherJob: kotlinx.coroutines.Job? = null
     private var acceptingIncomingSessionId: String? = null
-    private var registeredVoipPushToken: String? = null
+    private var registeredPushToken: String? = null
 
     init {
         com.example.trueline_listener.call.IncomingCallAlert.setActionHandlers(
             onAccept = ::acceptIncomingCall,
             onDecline = ::declineIncomingCall
         )
-        com.example.trueline_listener.call.IncomingCallAlert.setPushTokenUpdatedHandler(::registerIOSVoipPushToken)
+        com.example.trueline_listener.call.IncomingCallAlert.setPushTokenUpdatedHandler(::registerPushToken)
         refreshAllData()
     }
 
@@ -464,7 +464,7 @@ class MainPortalViewModel(
     }
 
     fun startIncomingCallWatcher() {
-        registerIOSVoipPushToken()
+        registerPushToken()
         incomingCallWatcherJob?.cancel()
         incomingCallWatcherJob = scope.launch {
             while (true) {
@@ -499,13 +499,18 @@ class MainPortalViewModel(
         }
     }
 
-    private fun registerIOSVoipPushToken() {
+    private fun registerPushToken() {
+        val platform = com.example.trueline_listener.call.IncomingCallAlert.getPushPlatform() ?: return
         val deviceToken = com.example.trueline_listener.call.IncomingCallAlert.getPushToken()?.trim().orEmpty()
-        if (deviceToken.isBlank() || deviceToken == registeredVoipPushToken) return
+        if (deviceToken.isBlank() || deviceToken == registeredPushToken) return
         scope.launch {
-            val result = repository.registerIOSVoIPDevice(deviceToken)
+            val result = when (platform) {
+                "ios-voip" -> repository.registerIOSVoIPDevice(deviceToken)
+                "android-fcm" -> repository.registerAndroidFCMDevice(deviceToken)
+                else -> return@launch
+            }
             if (result.success) {
-                registeredVoipPushToken = deviceToken
+                registeredPushToken = deviceToken
             }
         }
     }

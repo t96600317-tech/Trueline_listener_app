@@ -194,6 +194,22 @@ class ListenerRepository(
         }
     }
 
+    suspend fun registerAndroidFCMDevice(deviceToken: String): ApiResponse<SimpleMessageResponse> {
+        val token = getAuthToken() ?: return ApiResponse(false, error = ApiError("UNAUTHORIZED", "Not logged in"))
+        if (deviceToken.isBlank()) return ApiResponse(false, error = ApiError("INVALID_DEVICE_TOKEN", "Missing Android FCM device token"))
+        return try {
+            executeWithFallback { host ->
+                client.post("${getBaseUrl(host)}/api/v1/listener/devices/android-fcm") {
+                    contentType(ContentType.Application.Json)
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    setBody(mapOf("device_token" to deviceToken))
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to register Android push device"))
+        }
+    }
+
     suspend fun acceptCall(sessionId: String): ApiResponse<CallAcceptResponse> {
         val token = getAuthToken()
         if (token != null) {

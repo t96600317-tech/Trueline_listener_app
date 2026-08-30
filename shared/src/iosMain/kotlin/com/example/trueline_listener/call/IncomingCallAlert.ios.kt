@@ -113,5 +113,7 @@ actual object IncomingCallAlert {
     actual fun getPushToken(): String? = NSUserDefaults.standardUserDefaults
         .stringForKey(PUSH_TOKEN_KEY)
 
+    actual fun getPushPlatform(): String? = "ios-voip"
+
     private fun currentSessionId(): String? = activeSessionId ?: defaults.stringForKey(ACTIVE_SESSION_KEY)
 }

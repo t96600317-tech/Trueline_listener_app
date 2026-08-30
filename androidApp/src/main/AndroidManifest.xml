@@ -47,6 +47,14 @@
             android:exported="false"
             android:theme="@style/Theme.TrueLineListener.Call" />
 
+        <service
+            android:name="com.example.trueline_listener.TrueLineFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

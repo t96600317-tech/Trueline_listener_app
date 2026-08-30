@@ -49,6 +49,10 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
+            // KMP's Android source-set dependency DSL does not expose
+            // Gradle's platform() helper, so pin the same FCM version selected
+            // by the app module's Firebase BOM here.
+            implementation("com.google.firebase:firebase-messaging:25.0.1")
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.camera.core)

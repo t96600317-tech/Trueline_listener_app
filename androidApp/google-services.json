@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "684952860795",
+    "project_id": "trueline-24e85",
+    "storage_bucket": "trueline-24e85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684952860795:android:318b4e785354f67dba8ade",
+        "android_client_info": {
+          "package_name": "com.nexvert.trueline"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvGTmKKcvAOr41rtOwBnHfKgy2bHQGPw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684952860795:android:5efcf5cb92a3df79ba8ade",
+        "android_client_info": {
+          "package_name": "com.nexvert.trueline_listner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvGTmKKcvAOr41rtOwBnHfKgy2bHQGPw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

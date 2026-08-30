@@ -10,18 +10,39 @@ import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
+import com.google.firebase.messaging.FirebaseMessaging
 
 // Notification-channel sound settings are immutable after creation. This new
 // channel owns the ringtone, so the app never plays a second overlapping tone.
 private const val INCOMING_CALL_CHANNEL_ID = "incoming_calls_v3"
 private const val INCOMING_CALL_NOTIFICATION_ID = 72_001
+private const val PUSH_PREFERENCES = "trueline_push"
+private const val FCM_TOKEN_KEY = "fcm_token"
 
 private var incomingCallContext: Context? = null
 private var activeSessionId: String? = null
+private var pushTokenUpdatedHandler: (() -> Unit)? = null
 
 fun initIncomingCallAlert(context: Context) {
     incomingCallContext = context.applicationContext
     ensureIncomingCallChannel(context.applicationContext)
+    refreshFCMToken(context.applicationContext)
+}
+
+fun updateFCMToken(context: Context, token: String) {
+    if (token.isBlank()) return
+    context.applicationContext
+        .getSharedPreferences(PUSH_PREFERENCES, Context.MODE_PRIVATE)
+        .edit()
+        .putString(FCM_TOKEN_KEY, token)
+        .apply()
+    pushTokenUpdatedHandler?.invoke()
+}
+
+fun handleFCMIncomingCall(context: Context, sessionId: String, callerName: String) {
+    if (sessionId.isBlank()) return
+    initIncomingCallAlert(context.applicationContext)
+    IncomingCallAlert.start(sessionId, callerName)
 }
 
 actual object IncomingCallAlert {
@@ -48,9 +69,26 @@ actual object IncomingCallAlert {
 
     actual fun setActionHandlers(onAccept: () -> Unit, onDecline: () -> Unit) = Unit
 
-    actual fun setPushTokenUpdatedHandler(onTokenUpdated: () -> Unit) = Unit
+    actual fun setPushTokenUpdatedHandler(onTokenUpdated: () -> Unit) {
+        pushTokenUpdatedHandler = onTokenUpdated
+        if (!getPushToken().isNullOrBlank()) {
+            onTokenUpdated()
+        } else {
+            incomingCallContext?.let(::refreshFCMToken)
+        }
+    }
 
-    actual fun getPushToken(): String? = null
+    actual fun getPushToken(): String? = incomingCallContext
+        ?.getSharedPreferences(PUSH_PREFERENCES, Context.MODE_PRIVATE)
+        ?.getString(FCM_TOKEN_KEY, null)
+
+    actual fun getPushPlatform(): String? = "android-fcm"
+}
+
+private fun refreshFCMToken(context: Context) {
+    FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+        updateFCMToken(context, token)
+    }
 }
 
 private fun ensureIncomingCallChannel(context: Context) {

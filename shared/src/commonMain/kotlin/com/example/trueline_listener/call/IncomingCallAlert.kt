@@ -7,4 +7,5 @@ expect object IncomingCallAlert {
     fun setActionHandlers(onAccept: () -> Unit, onDecline: () -> Unit)
     fun setPushTokenUpdatedHandler(onTokenUpdated: () -> Unit)
     fun getPushToken(): String?
+    fun getPushPlatform(): String?
 }
