@@ -521,6 +521,13 @@ class MainPortalViewModel(
                             repository.endCall(session.id, "listener_hangup")
                             refreshAllData()
                         }
+                    },
+                    onCallStartFailed = { message ->
+                        errorMessage = message
+                        scope.launch {
+                            repository.endCall(session.id, "listener_connection_failed")
+                            refreshAllData()
+                        }
                     }
                 )
             } catch (e: Exception) {

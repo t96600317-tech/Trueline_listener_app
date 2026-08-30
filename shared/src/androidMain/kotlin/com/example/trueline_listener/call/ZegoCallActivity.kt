@@ -1,19 +1,26 @@
 package com.example.trueline_listener.call
 
 import android.Manifest
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.zegocloud.uikit.ZegoUIKit
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallConfig
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallFragment
+import com.zegocloud.uikit.prebuilt.call.config.ZegoCallDurationConfig
+import com.zegocloud.uikit.service.defines.RoomStateChangedListener
+import im.zego.zegoexpress.constants.ZegoRoomStateChangedReason
 
 class ZegoCallActivity : AppCompatActivity() {
 
     companion object {
         var onCallEndCallback: (() -> Unit)? = null
+        var onCallStartFailedCallback: ((message: String) -> Unit)? = null
         private const val PERMISSION_REQ_CODE = 102
     }
 
@@ -25,8 +32,26 @@ class ZegoCallActivity : AppCompatActivity() {
     private var containerLayoutId: Int = 0
     private var isFragmentAttached = false
     private var callEndReported = false
+    private var callStartFailureReported = false
+    private var callConnected = false
 
     private var targetUserName: String = ""
+
+    private val roomStateListener = RoomStateChangedListener { roomID, reason, errorCode, _ ->
+        if (roomID != callId) return@RoomStateChangedListener
+
+        when (reason) {
+            ZegoRoomStateChangedReason.LOGINED,
+            ZegoRoomStateChangedReason.RECONNECTED -> callConnected = true
+
+            ZegoRoomStateChangedReason.LOGIN_FAILED,
+            ZegoRoomStateChangedReason.RECONNECT_FAILED -> {
+                reportConnectionFailure("Zego room login failed (reason=$reason, code=$errorCode)")
+            }
+
+            else -> Unit
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +74,10 @@ class ZegoCallActivity : AppCompatActivity() {
         val rawCallId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
         callId = rawCallId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "call_${System.currentTimeMillis()}" }.take(64)
 
+        ZegoUIKit.addRoomStateChangedListener(roomStateListener)
+
         if (zegoToken.isBlank()) {
-            finishCall()
+            reportConnectionFailure("The backend returned an empty Zego token")
             return
         }
 
@@ -76,7 +103,7 @@ class ZegoCallActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQ_CODE && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             startCallFragment(containerLayoutId)
         } else {
-            finishCall()
+            reportConnectionFailure("Microphone permission was denied")
         }
     }
 
@@ -91,7 +118,9 @@ class ZegoCallActivity : AppCompatActivity() {
                 useSpeakerWhenJoining = true
                 topMenuBarConfig.isVisible = true
                 topMenuBarConfig.title = targetUserName
-                durationConfig.isVisible = true
+                durationConfig = ZegoCallDurationConfig().apply {
+                    isVisible = true
+                }
                 leaveCallListener = ZegoUIKitPrebuiltCallFragment.LeaveCallListener {
                     finishCall()
                 }
@@ -110,18 +139,25 @@ class ZegoCallActivity : AppCompatActivity() {
                 .replace(containerId, fragment)
                 .commitAllowingStateLoss()
         } catch (e: Exception) {
-            e.printStackTrace()
-            finishCall()
+            val detail = buildString {
+                append("Unable to create the Zego call screen: ${e.javaClass.simpleName}")
+                e.message?.takeIf { it.isNotBlank() }?.let { append(" ($it)") }
+            }
+            reportConnectionFailure(detail)
         }
     }
 
     private fun finishCall() {
+        if (!callConnected) {
+            reportConnectionFailure("The Zego room closed before connecting")
+            return
+        }
         reportCallEnded()
         finish()
     }
 
     private fun reportCallEnded() {
-        if (callEndReported) return
+        if (callEndReported || callStartFailureReported) return
         callEndReported = true
         try {
             onCallEndCallback?.invoke()
@@ -129,10 +165,37 @@ class ZegoCallActivity : AppCompatActivity() {
             e.printStackTrace()
         }
         onCallEndCallback = null
+        onCallStartFailedCallback = null
+    }
+
+    private fun reportConnectionFailure(detail: String) {
+        if (callEndReported || callStartFailureReported) return
+        callStartFailureReported = true
+
+        val isDebugBuild = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        val message = if (isDebugBuild) {
+            "Voice connection failed: $detail"
+        } else {
+            "We couldn't connect the voice call. Please try again."
+        }
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        try {
+            onCallStartFailedCallback?.invoke(message)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        onCallStartFailedCallback = null
+        onCallEndCallback = null
+        if (!isFinishing) {
+            finish()
+        }
     }
 
     override fun onDestroy() {
-        if (isFinishing) {
+        ZegoUIKit.removeRoomStateChangedListener(roomStateListener)
+        if (isFinishing && !callConnected) {
+            reportConnectionFailure("The call activity closed before connection completed")
+        } else if (isFinishing) {
             reportCallEnded()
         }
         super.onDestroy()

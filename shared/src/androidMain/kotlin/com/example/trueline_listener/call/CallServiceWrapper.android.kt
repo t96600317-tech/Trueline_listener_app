@@ -33,10 +33,12 @@ actual class CallServiceWrapper(private val context: Context) {
         targetUserName: String,
         token: String,
         signedUserId: String,
-        onCallEnd: () -> Unit
+        onCallEnd: () -> Unit,
+        onCallStartFailed: (message: String) -> Unit
     ) {
         require(token.isNotBlank()) { "A Zego token is required to start a voice call" }
         ZegoCallActivity.onCallEndCallback = onCallEnd
+        ZegoCallActivity.onCallStartFailedCallback = onCallStartFailed
 
         val safeTargetName = targetUserName.trim().ifBlank { "User" }.take(64)
 

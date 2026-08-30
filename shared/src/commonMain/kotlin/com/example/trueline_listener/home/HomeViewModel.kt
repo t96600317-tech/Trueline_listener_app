@@ -197,6 +197,10 @@ class HomeViewModel(
                 signedUserId = callData.zego_user_id,
                 onCallEnd = {
                     endActiveCall()
+                },
+                onCallStartFailed = { message ->
+                    errorMessage = message
+                    endActiveCall()
                 }
             )
         }
