@@ -100,7 +100,7 @@ class MainPortalViewModel(
         private set
 
     // Data States
-    var dashboardData by mutableStateOf(HomeDashboardResponse())
+    var dashboardData by mutableStateOf(HomeDashboardResponse(listener_name = "Zayan", listener_id_tag = "ID 40219"))
         private set
 
     var milestonesData by mutableStateOf(MilestonesHubResponse())
