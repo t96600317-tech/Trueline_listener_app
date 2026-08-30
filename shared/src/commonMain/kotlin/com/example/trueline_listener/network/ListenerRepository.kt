@@ -502,6 +502,19 @@ class ListenerRepository(
         }
     }
 
+    suspend fun getNotifications(): ApiResponse<NotificationsResponse> {
+        return try {
+            executeWithFallback { host ->
+                client.get("${getBaseUrl(host)}/api/v1/listener/notifications") {
+                    getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                }.body()
+            }
+        } catch (e: Exception) {
+            ApiResponse(false, error = ApiError("NETWORK_ERROR", e.message ?: "Failed to load notifications"))
+        }
+    }
+
+
 
 
     suspend fun submitReport(reason: String, details: String): ApiResponse<SimpleMessageResponse> {

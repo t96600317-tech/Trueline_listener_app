@@ -197,4 +197,23 @@ data class TransactionsResponse(
     val transactions: List<TransactionItemData> = emptyList()
 )
 
+@Serializable
+data class NotificationItemData(
+    val id: String = "",
+    val type: String = "SYSTEM", // "PAYOUT", "BONUS", "RATING", "MISSED_CALL", "KYC"
+    val title: String = "",
+    val message: String = "",
+    val timestamp: String = "",
+    val is_read: Boolean = false,
+    val icon_type: String = "bell",
+    val created_at: String = ""
+)
+
+@Serializable
+data class NotificationsResponse(
+    val unread_count: Int = 0,
+    val notifications: List<NotificationItemData> = emptyList()
+)
+
+
 

@@ -26,7 +26,8 @@ enum class PortalSubScreen {
     AVAILABLE_HOURS,
     PRIVACY_INFO,
     SUPPORT_INFO,
-    TRANSACTIONS
+    TRANSACTIONS,
+    NOTIFICATIONS
 }
 
 class MainPortalViewModel(
@@ -157,6 +158,11 @@ class MainPortalViewModel(
     var transactionsList = androidx.compose.runtime.mutableStateListOf<TransactionItemData>()
     var isTransactionsLoading by mutableStateOf(false)
 
+    // Notification States
+    var notificationsList = androidx.compose.runtime.mutableStateListOf<NotificationItemData>()
+    var unreadNotificationsCount by mutableStateOf(0)
+    var isNotificationsLoading by mutableStateOf(false)
+
     // Incoming Call States
     var incomingCallSession by mutableStateOf<CallSessionData?>(null)
         private set
@@ -179,6 +185,8 @@ class MainPortalViewModel(
         activeSubScreen = screen
         if (screen == PortalSubScreen.TRANSACTIONS) {
             fetchTransactions()
+        } else if (screen == PortalSubScreen.NOTIFICATIONS) {
+            fetchNotifications()
         }
     }
 
@@ -221,10 +229,24 @@ class MainPortalViewModel(
         }
     }
 
+    fun fetchNotifications() {
+        isNotificationsLoading = true
+        scope.launch {
+            val res = repository.getNotifications()
+            isNotificationsLoading = false
+            if (res.success && res.data != null) {
+                notificationsList.clear()
+                notificationsList.addAll(res.data.notifications)
+                unreadNotificationsCount = res.data.unread_count
+            }
+        }
+    }
+
     fun refreshAllData() {
         isLoading = true
         fetchCallHistory()
         fetchTransactions()
+        fetchNotifications()
         scope.launch {
             val dashRes = repository.getHomeDashboard()
             if (dashRes.success && dashRes.data != null) {

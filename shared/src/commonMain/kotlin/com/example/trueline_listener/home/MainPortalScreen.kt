@@ -82,6 +82,9 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                     PortalSubScreen.TRANSACTIONS -> {
                         TransactionsScreen(viewModel = viewModel)
                     }
+                    PortalSubScreen.NOTIFICATIONS -> {
+                        NotificationsScreen(viewModel = viewModel)
+                    }
                     PortalSubScreen.NONE -> {
                         // Main Tabs
                         when (viewModel.currentTab) {
@@ -225,7 +228,10 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
 
         // Right: Notification Bell Button with alert dot
         Surface(
-            modifier = Modifier.size(38.dp),
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .clickable { viewModel.openSubScreen(PortalSubScreen.NOTIFICATIONS) },
             shape = CircleShape,
             color = Color.White,
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
@@ -238,15 +244,17 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
                     modifier = Modifier.size(20.dp)
                 )
 
-                // Orange Alert Badge Dot
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF97316))
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-6).dp, y = 6.dp)
-                )
+                if (viewModel.unreadNotificationsCount > 0) {
+                    // Orange Alert Badge Dot
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF97316))
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-6).dp, y = 6.dp)
+                    )
+                }
             }
         }
     }
