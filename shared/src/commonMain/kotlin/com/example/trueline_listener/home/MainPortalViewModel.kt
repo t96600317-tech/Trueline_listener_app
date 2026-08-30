@@ -510,15 +510,24 @@ class MainPortalViewModel(
                         if (incRes.success && incRes.data != null) {
                             val session = incRes.data
                             if (session.status == "pending") {
+                                if (incomingCallSession?.id != session.id) {
+                                    com.example.trueline_listener.call.IncomingCallAlert.start(
+                                        session.id,
+                                        session.caller_name
+                                    )
+                                }
                                 incomingCallSession = session
                             } else {
+                                com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
                                 incomingCallSession = null
                             }
                         } else {
+                            com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
                             incomingCallSession = null
                         }
                     } catch (_: Exception) {}
                 } else {
+                    com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
                     incomingCallSession = null
                 }
                 delay(1500)
@@ -529,11 +538,13 @@ class MainPortalViewModel(
     fun stopIncomingCallWatcher() {
         incomingCallWatcherJob?.cancel()
         incomingCallWatcherJob = null
+        com.example.trueline_listener.call.IncomingCallAlert.stop(incomingCallSession?.id)
         incomingCallSession = null
     }
 
     fun acceptIncomingCall() {
         val session = incomingCallSession ?: return
+        com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
         incomingCallSession = null
         scope.launch {
             val res = repository.acceptCall(session.id)
@@ -564,6 +575,7 @@ class MainPortalViewModel(
 
     fun declineIncomingCall() {
         val session = incomingCallSession ?: return
+        com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
         incomingCallSession = null
         scope.launch {
             repository.endCall(session.id, "listener_decline")

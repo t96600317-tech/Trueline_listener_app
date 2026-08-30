@@ -1,6 +1,8 @@
 package com.example.trueline_listener
 
+import android.Manifest
 import android.os.Bundle
+import android.os.Build
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
@@ -8,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.trueline_listener.onboarding.OnboardingViewModel
 
@@ -27,6 +31,12 @@ class MainActivity : AppCompatActivity() {
         )
         com.example.trueline_listener.location.initLocationProvider(this)
         com.example.trueline_listener.call.initCallService(this)
+        com.example.trueline_listener.call.initIncomingCallAlert(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 201)
+        }
 
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
 
