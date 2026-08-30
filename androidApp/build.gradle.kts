@@ -1,9 +1,28 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
 }
+
+val localProperties = Properties().also { properties ->
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.isFile) {
+        localPropertiesFile.inputStream().use(properties::load)
+    }
+}
+
+fun msg91Property(name: String): String = providers.gradleProperty(name)
+    .orElse(providers.environmentVariable(name))
+    .orElse(localProperties.getProperty(name) ?: "")
+    .get()
+
+val msg91WidgetId = msg91Property("MSG91_WIDGET_ID")
+val msg91AuthToken = msg91Property("MSG91_AUTH_TOKEN")
+
+fun buildConfigString(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
 kotlin {
     compilerOptions {
@@ -35,6 +54,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "MSG91_WIDGET_ID", buildConfigString(msg91WidgetId))
+        buildConfigField("String", "MSG91_AUTH_TOKEN", buildConfigString(msg91AuthToken))
     }
     packaging {
         resources {
@@ -56,5 +77,6 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }

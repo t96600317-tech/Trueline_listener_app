@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.trueline_listener.network.ListenerRepository
+import com.example.trueline_listener.otp.Msg91OtpResult
+import com.example.trueline_listener.otp.getMsg91OtpGateway
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -185,6 +187,8 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
     private val _resendTimer = MutableStateFlow(24)
     val resendTimer: StateFlow<Int> = _resendTimer.asStateFlow()
     private var timerJob: Job? = null
+    private val msg91Otp = getMsg91OtpGateway()
+    private var msg91RequestId: String? = null
 
     init {
         restoreSession()
@@ -500,13 +504,36 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         errorMessage = null
 
         scope.launch {
-            val response = repository.requestOtp(phoneNumber)
-            isLoading = false
-            if (response.success) {
+            val shouldRetryMsg91 = _currentStep.value == OnboardingStep.OTP_VERIFICATION &&
+                !msg91RequestId.isNullOrBlank()
+            val msg91Result = if (msg91Otp.isConfigured) {
+                if (shouldRetryMsg91) {
+                    msg91Otp.retryOtp(msg91RequestId.orEmpty())
+                } else {
+                    msg91Otp.sendOtp("91$phoneNumber")
+                }
+            } else {
+                null
+            }
+            if (msg91Result?.success == true) {
+                if (!shouldRetryMsg91) {
+                    msg91RequestId = msg91Result.requestId
+                }
+                isLoading = false
                 _currentStep.value = OnboardingStep.OTP_VERIFICATION
                 startResendTimer()
+            } else if (msg91Result != null) {
+                isLoading = false
+                errorMessage = msg91Result.errorMessage ?: "Failed to send OTP. Please retry."
             } else {
-                errorMessage = response.error?.message ?: "Failed to send OTP. Please retry."
+                val response = repository.requestOtp(phoneNumber)
+                isLoading = false
+                if (response.success) {
+                    _currentStep.value = OnboardingStep.OTP_VERIFICATION
+                    startResendTimer()
+                } else {
+                    errorMessage = response.error?.message ?: "Failed to send OTP. Please retry."
+                }
             }
         }
     }
@@ -521,7 +548,29 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         errorMessage = null
 
         scope.launch {
-            val response = repository.verifyOtp(phoneNumber, otp)
+            val msg91Result = if (msg91Otp.isConfigured) {
+                val requestId = msg91RequestId
+                if (requestId.isNullOrBlank()) {
+                    Msg91OtpResult(false, errorMessage = "Please request a new OTP.")
+                } else {
+                    msg91Otp.verifyOtp(requestId, otp)
+                }
+            } else {
+                null
+            }
+            if (msg91Result != null && !msg91Result.success) {
+                isLoading = false
+                errorMessage = msg91Result.errorMessage ?: "Invalid OTP. Please try again."
+                return@launch
+            }
+            if (msg91Result != null && msg91Result.accessToken.isNullOrBlank()) {
+                msg91RequestId = null
+                isLoading = false
+                errorMessage = "MSG91 verified the code but did not return an access token. Please request a new OTP."
+                return@launch
+            }
+
+            val response = repository.verifyOtp(phoneNumber, otp, msg91RequestId, msg91Result?.accessToken)
             isLoading = false
             if (response.success) {
                 val listener = response.data?.listener
@@ -563,7 +612,7 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
                     _currentStep.value = targetStep
                 }
             } else {
-                errorMessage = response.error?.message ?: "Incorrect OTP. In development mode, use 123456."
+                errorMessage = response.error?.message ?: "Invalid OTP. Please check the code and try again."
             }
         }
     }

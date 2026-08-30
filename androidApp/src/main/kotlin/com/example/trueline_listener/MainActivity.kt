@@ -21,6 +21,10 @@ class MainActivity : AppCompatActivity() {
         // Initialize Audio Engine & Session Storage & Location Provider & Call Service
         com.example.trueline_listener.audio.initAudioEngine(this)
         com.example.trueline_listener.storage.initSessionStorage(this)
+        com.example.trueline_listener.otp.initMsg91Otp(
+            widgetId = BuildConfig.MSG91_WIDGET_ID,
+            authToken = BuildConfig.MSG91_AUTH_TOKEN
+        )
         com.example.trueline_listener.location.initLocationProvider(this)
         com.example.trueline_listener.call.initCallService(this)
 

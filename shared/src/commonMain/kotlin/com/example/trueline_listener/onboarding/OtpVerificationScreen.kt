@@ -163,7 +163,6 @@ fun OtpVerificationScreen(viewModel: OnboardingViewModel) {
                             color = Primary,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable {
-                                viewModel.startResendTimer()
                                 viewModel.requestOtp()
                             }
                         )

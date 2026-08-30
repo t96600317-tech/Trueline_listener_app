@@ -85,8 +85,7 @@ class HomeViewModel(
                 isOnline = profRes.data.availability == "online"
                 try {
                     com.example.trueline_listener.call.getCallService().initialize(
-                        628007464L,
-                        "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e",
+                        1939552281L,
                         profRes.data.id,
                         profRes.data.name
                     )
@@ -180,18 +179,21 @@ class HomeViewModel(
         scope.launch {
             val res = repository.acceptCall(sid)
             isLoading = false
-            if (res.success && res.data != null) {
-                listenerToken = res.data.listener_token
+            val callData = res.data
+            if (!res.success || callData == null || callData.listener_token.isBlank() || callData.room_id.isBlank()) {
+                errorMessage = res.error?.message ?: "Unable to get a secure voice-call token"
+                return@launch
             }
+            listenerToken = callData.listener_token
             screenState = AppScreenState.ACTIVE_CALL
             startCallTimer()
 
             // Launch Zego 1-on-1 audio call room
             com.example.trueline_listener.call.getCallService().startAudioCall(
-                roomId = roomId,
+                roomId = callData.room_id,
                 targetUserId = sid,
                 targetUserName = callerName,
-                token = listenerToken ?: "",
+                token = callData.listener_token,
                 onCallEnd = {
                     endActiveCall()
                 }

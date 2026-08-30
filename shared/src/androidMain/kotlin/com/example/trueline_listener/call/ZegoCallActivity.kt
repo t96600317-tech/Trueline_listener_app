@@ -2,7 +2,6 @@ package com.example.trueline_listener.call
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -18,13 +17,14 @@ class ZegoCallActivity : AppCompatActivity() {
         private const val PERMISSION_REQ_CODE = 102
     }
 
-    private var appId: Long = 628007464L
-    private var appSign: String = "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e"
+    private var appId: Long = 1939552281L
+    private var zegoToken: String = ""
     private var userId: String = ""
     private var userName: String = ""
     private var callId: String = ""
     private var containerLayoutId: Int = 0
     private var isFragmentAttached = false
+    private var callEndReported = false
 
     private var targetUserName: String = ""
 
@@ -37,8 +37,8 @@ class ZegoCallActivity : AppCompatActivity() {
         containerLayoutId = frameLayout.id
         setContentView(frameLayout)
 
-        appId = intent.getLongExtra("APP_ID", 628007464L)
-        appSign = intent.getStringExtra("APP_SIGN") ?: "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e"
+        appId = intent.getLongExtra("APP_ID", 1939552281L)
+        zegoToken = intent.getStringExtra("ZEGO_TOKEN").orEmpty()
         
         val rawUserId = intent.getStringExtra("USER_ID") ?: ("listener_" + System.currentTimeMillis())
         userId = rawUserId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "listener_${System.currentTimeMillis()}" }.take(64)
@@ -48,6 +48,11 @@ class ZegoCallActivity : AppCompatActivity() {
         
         val rawCallId = intent.getStringExtra("CALL_ID") ?: ("call_" + System.currentTimeMillis())
         callId = rawCallId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "call_${System.currentTimeMillis()}" }.take(64)
+
+        if (zegoToken.isBlank()) {
+            finishCall()
+            return
+        }
 
         val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
 
@@ -68,7 +73,11 @@ class ZegoCallActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        startCallFragment(containerLayoutId)
+        if (requestCode == PERMISSION_REQ_CODE && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            startCallFragment(containerLayoutId)
+        } else {
+            finishCall()
+        }
     }
 
     private fun startCallFragment(containerId: Int) {
@@ -83,11 +92,14 @@ class ZegoCallActivity : AppCompatActivity() {
                 topMenuBarConfig.isVisible = true
                 topMenuBarConfig.title = targetUserName
                 durationConfig.isVisible = true
+                leaveCallListener = ZegoUIKitPrebuiltCallFragment.LeaveCallListener {
+                    finishCall()
+                }
             }
 
-            val fragment = ZegoUIKitPrebuiltCallFragment.newInstance(
+            val fragment = ZegoUIKitPrebuiltCallFragment.newInstanceWithToken(
                 appId,
-                appSign,
+                zegoToken,
                 userId,
                 userName,
                 callId,
@@ -99,17 +111,30 @@ class ZegoCallActivity : AppCompatActivity() {
                 .commitAllowingStateLoss()
         } catch (e: Exception) {
             e.printStackTrace()
-            finish()
+            finishCall()
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    private fun finishCall() {
+        reportCallEnded()
+        finish()
+    }
+
+    private fun reportCallEnded() {
+        if (callEndReported) return
+        callEndReported = true
         try {
             onCallEndCallback?.invoke()
         } catch (e: Exception) {
             e.printStackTrace()
         }
         onCallEndCallback = null
+    }
+
+    override fun onDestroy() {
+        if (isFinishing) {
+            reportCallEnded()
+        }
+        super.onDestroy()
     }
 }

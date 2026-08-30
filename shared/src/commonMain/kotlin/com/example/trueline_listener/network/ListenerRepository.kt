@@ -109,12 +109,17 @@ class ListenerRepository(
         }
     }
 
-    suspend fun verifyOtp(phone: String, otp: String): ApiResponse<AuthResponse> {
+    suspend fun verifyOtp(
+        phone: String,
+        otp: String,
+        msg91RequestId: String? = null,
+        msg91AccessToken: String? = null
+    ): ApiResponse<AuthResponse> {
         val response: ApiResponse<AuthResponse> = try {
             executeWithFallback { host ->
                 client.post("${getBaseUrl(host)}/api/v1/auth/otp/verify") {
                     contentType(ContentType.Application.Json)
-                    setBody(OtpVerifyRequest(phone, otp, "listener"))
+                    setBody(OtpVerifyRequest(phone, otp, "listener", msg91RequestId, msg91AccessToken))
                 }.body()
             }
         } catch (e: Exception) {

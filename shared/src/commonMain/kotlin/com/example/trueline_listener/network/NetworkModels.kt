@@ -34,7 +34,9 @@ data class OtpResponse(
 data class OtpVerifyRequest(
     val phone: String,
     val otp: String,
-    val role: String
+    val role: String,
+    val request_id: String? = null,
+    val msg91_access_token: String? = null
 )
 
 @Serializable
@@ -196,7 +198,6 @@ data class TransactionItemData(
 data class TransactionsResponse(
     val transactions: List<TransactionItemData> = emptyList()
 )
-
 @Serializable
 data class NotificationItemData(
     val id: String = "",
@@ -214,6 +215,3 @@ data class NotificationsResponse(
     val unread_count: Int = 0,
     val notifications: List<NotificationItemData> = emptyList()
 )
-
-
-

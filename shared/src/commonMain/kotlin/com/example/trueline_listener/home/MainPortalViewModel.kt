@@ -291,8 +291,7 @@ class MainPortalViewModel(
                 }
                 try {
                     com.example.trueline_listener.call.getCallService().initialize(
-                        628007464L,
-                        "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e",
+                        1939552281L,
                         p.id,
                         p.name
                     )
@@ -538,48 +537,27 @@ class MainPortalViewModel(
         incomingCallSession = null
         scope.launch {
             val res = repository.acceptCall(session.id)
-            val token = if (res.success && res.data != null) res.data.listener_token else ""
-            val roomId = if (res.success && res.data != null && res.data.room_id.isNotBlank()) {
-                res.data.room_id
-            } else {
-                session.room_id.ifBlank { "call_${session.id.replace("-", "").take(16)}" }
+            val callData = res.data
+            if (!res.success || callData == null || callData.listener_token.isBlank() || callData.room_id.isBlank()) {
+                errorMessage = res.error?.message ?: "Unable to get a secure voice-call token"
+                return@launch
             }
+
             try {
                 com.example.trueline_listener.call.getCallService().startAudioCall(
-                    roomId = roomId,
+                    roomId = callData.room_id,
                     targetUserId = session.caller_id.ifBlank { session.id },
                     targetUserName = session.caller_name.ifBlank { "User" },
-                    token = token,
+                    token = callData.listener_token,
                     onCallEnd = {
-                        refreshAllData()
+                        scope.launch {
+                            repository.endCall(session.id, "listener_hangup")
+                            refreshAllData()
+                        }
                     }
                 )
             } catch (e: Exception) {
-                try {
-                    val profileRes = repository.getMe()
-                    if (profileRes.success && profileRes.data != null) {
-                        val p = profileRes.data
-                        com.example.trueline_listener.call.getCallService().initialize(
-                            628007464L,
-                            "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e",
-                            p.id,
-                            p.name
-                        )
-                        com.example.trueline_listener.call.getCallService().startAudioCall(
-                            roomId = roomId,
-                            targetUserId = session.caller_id.ifBlank { session.id },
-                            targetUserName = session.caller_name.ifBlank { "User" },
-                            token = token,
-                            onCallEnd = {
-                                refreshAllData()
-                            }
-                        )
-                    } else {
-                        errorMessage = "Failed to start call: service not ready"
-                    }
-                } catch (e2: Exception) {
-                    errorMessage = e2.message ?: "Failed to start call"
-                }
+                errorMessage = e.message ?: "Failed to start secure voice call"
             }
         }
     }
@@ -842,19 +820,6 @@ class MainPortalViewModel(
     }
 
     fun startCallWithUser(targetUserId: String, targetUserName: String) {
-        val roomId = "call_${targetUserId.replace("-", "").take(16)}"
-        try {
-            com.example.trueline_listener.call.getCallService().startAudioCall(
-                roomId = roomId,
-                targetUserId = targetUserId,
-                targetUserName = targetUserName,
-                token = "",
-                onCallEnd = {
-                    refreshAllData()
-                }
-            )
-        } catch (e: Exception) {
-            errorMessage = e.message ?: "Failed to initiate call"
-        }
+        errorMessage = "Voice calls must be started by a customer request"
     }
 }

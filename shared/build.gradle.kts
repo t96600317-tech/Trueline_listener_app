@@ -51,6 +51,8 @@ kotlin {
             implementation(libs.accompanist.permissions)
             implementation(libs.mlkit.face.detection)
             implementation(libs.ktor.client.okhttp)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+            implementation("com.msg91.lib:sendotp:1.0.0")
             implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
             implementation("com.github.ZEGOCLOUD:zego_uikit_signaling_plugin_android:+")
         }
