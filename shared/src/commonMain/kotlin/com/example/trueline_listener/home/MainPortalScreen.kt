@@ -116,11 +116,6 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                     GoOfflineConfirmModal(viewModel = viewModel)
                 }
 
-                // Break Options Modal
-                if (viewModel.showBreakOptionsModal) {
-                    BreakOptionsModal(viewModel = viewModel)
-                }
-
                 // Toast Notifications
                 viewModel.successNotification?.let { msg ->
                     Box(

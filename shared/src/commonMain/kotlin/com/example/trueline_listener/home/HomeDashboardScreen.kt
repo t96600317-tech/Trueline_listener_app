@@ -54,67 +54,11 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
             onModeSelected = { newMode ->
                 if (newMode == AvailabilityMode.OFFLINE && viewModel.availabilityMode != AvailabilityMode.OFFLINE) {
                     viewModel.openGoOfflineModal()
-                } else if (newMode == AvailabilityMode.BUSY) {
-                    viewModel.showBreakOptionsModal = true
                 } else {
                     viewModel.updateAvailabilityMode(newMode)
                 }
             }
         )
-
-        // Active Break Banner (when BUSY)
-        if (viewModel.availabilityMode == AvailabilityMode.BUSY) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFFF7ED),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDBA74))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Text(text = "☕", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            val remainingText = if (viewModel.isBreakTimerActive && viewModel.breakRemainingSeconds > 0) {
-                                val m = viewModel.breakRemainingSeconds / 60
-                                val s = viewModel.breakRemainingSeconds % 60
-                                val padS = if (s < 10) "0$s" else "$s"
-                                val padM = if (m < 10) "0$m" else "$m"
-                                "Break timer: $padM:$padS"
-                            } else {
-                                "On break (Calls paused)"
-                            }
-                            Text(
-                                text = remainingText,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9A3412)
-                            )
-                            Text(
-                                text = "Zero missed call penalty",
-                                fontSize = 11.sp,
-                                color = Color(0xFFC2410C)
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { viewModel.endBreak() },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C)),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text("Go Online", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -291,13 +235,13 @@ private fun AvailabilityCard(
             // Subtext
             val subText = when (mode) {
                 AvailabilityMode.OFFLINE -> "You're offline right now"
-                AvailabilityMode.BUSY -> "Taking a short break • Calls paused"
+                AvailabilityMode.BUSY -> "You're marked as busy (lower priority on caller feed)"
                 AvailabilityMode.ONLINE -> "You're taking calls now"
             }
             Text(
                 text = subText,
                 fontSize = 12.sp,
-                color = if (mode == AvailabilityMode.BUSY) Color(0xFFC2410C) else Color(0xFF64748B)
+                color = if (mode == AvailabilityMode.BUSY) Color(0xFFEA580C) else Color(0xFF64748B)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
