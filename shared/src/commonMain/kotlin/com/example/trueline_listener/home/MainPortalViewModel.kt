@@ -464,7 +464,11 @@ class MainPortalViewModel(
         scope.launch {
             val res = repository.acceptCall(session.id)
             val token = if (res.success && res.data != null) res.data.listener_token else ""
-            val roomId = session.room_id.ifBlank { "call_${session.id.replace("-", "").take(16)}" }
+            val roomId = if (res.success && res.data != null && res.data.room_id.isNotBlank()) {
+                res.data.room_id
+            } else {
+                session.room_id.ifBlank { "call_${session.id.replace("-", "").take(16)}" }
+            }
             try {
                 com.example.trueline_listener.call.getCallService().startAudioCall(
                     roomId = roomId,
@@ -476,7 +480,31 @@ class MainPortalViewModel(
                     }
                 )
             } catch (e: Exception) {
-                errorMessage = e.message ?: "Failed to start call"
+                try {
+                    val profileRes = repository.getMe()
+                    if (profileRes.success && profileRes.data != null) {
+                        val p = profileRes.data
+                        com.example.trueline_listener.call.getCallService().initialize(
+                            628007464L,
+                            "e7dffb8a9cb6a89f1fc2afddcc16f4ce4df9cd1e8ca346076161caf69cbd465e",
+                            p.id,
+                            p.name
+                        )
+                        com.example.trueline_listener.call.getCallService().startAudioCall(
+                            roomId = roomId,
+                            targetUserId = session.caller_id.ifBlank { session.id },
+                            targetUserName = session.caller_name.ifBlank { "User" },
+                            token = token,
+                            onCallEnd = {
+                                refreshAllData()
+                            }
+                        )
+                    } else {
+                        errorMessage = "Failed to start call: service not ready"
+                    }
+                } catch (e2: Exception) {
+                    errorMessage = e2.message ?: "Failed to start call"
+                }
             }
         }
     }

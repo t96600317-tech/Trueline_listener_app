@@ -66,38 +66,13 @@ actual class CallServiceWrapper(private val context: Context) {
     ) {
         ZegoCallActivity.onCallEndCallback = onCallEnd
 
-        val safeTargetId = targetUserId.replace("-", "_").filter { it.isLetterOrDigit() || it == '_' }.ifBlank { "user_${System.currentTimeMillis()}" }.take(64)
         val safeTargetName = targetUserName.trim().ifBlank { "User" }.take(64)
-
-        val activity = (context as? Activity) ?: currentActivityRef
 
         // Ensure invitation service is active
         if (!isInvitationServiceInit) {
             val uid = currentUserId.ifBlank { "listener_" + System.currentTimeMillis() }
             val uname = currentUserName.ifBlank { "Listener" }
             initialize(currentAppId, currentAppSign, uid, uname)
-        }
-
-        if (activity != null) {
-            val invitees = listOf(ZegoUIKitUser(safeTargetId, safeTargetName))
-            try {
-                ZegoUIKitPrebuiltCallInvitationService.sendInvitationWithUIChange(
-                    activity,
-                    invitees,
-                    ZegoInvitationType.VOICE_CALL,
-                    object : PluginCallbackListener {
-                        override fun callback(result: Map<String, Any>?) {
-                            val code = result?.get("code") as? Int ?: 0
-                            if (code != 0) {
-                                launchDirectCall(roomId, safeTargetName)
-                            }
-                        }
-                    }
-                )
-                return
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
 
         launchDirectCall(roomId, safeTargetName)
