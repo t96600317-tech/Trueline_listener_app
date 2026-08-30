@@ -16,6 +16,12 @@ private extension Notification.Name {
 final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
     static let shared = IncomingCallCoordinator()
 
+    private enum StorageKey {
+        static let activeSessionID = "trueline.listener.incoming-session-id"
+        static let acceptedSessionID = "trueline.listener.incoming-accepted-session-id"
+        static let declinedSessionID = "trueline.listener.incoming-declined-session-id"
+    }
+
     private lazy var provider: CXProvider = {
         let configuration = CXProviderConfiguration(localizedName: "TrueLine")
         configuration.supportsVideo = false
@@ -63,6 +69,7 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
         activeSessionID = sessionID
         activeCallUUID = uuid
         isAccepted = false
+        UserDefaults.standard.set(sessionID, forKey: StorageKey.activeSessionID)
 
         let update = CXCallUpdate()
         update.remoteHandle = CXHandle(type: .generic, value: callerName)
@@ -108,6 +115,9 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
     func providerDidReset(_ provider: CXProvider) {
         let sessionID = activeSessionID
         let wasAccepted = isAccepted
+        if !wasAccepted, let sessionID {
+            UserDefaults.standard.set(sessionID, forKey: StorageKey.declinedSessionID)
+        }
         resetActiveCall()
         if wasAccepted {
             NotificationCenter.default.post(name: .truelineZegoEnd, object: nil)
@@ -122,6 +132,9 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
             return
         }
         isAccepted = true
+        if let sessionID = activeSessionID {
+            UserDefaults.standard.set(sessionID, forKey: StorageKey.acceptedSessionID)
+        }
         action.fulfill()
         NotificationCenter.default.post(name: .truelineIncomingCallAccepted, object: nil)
     }
@@ -132,6 +145,9 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
             return
         }
         let wasAccepted = isAccepted
+        if !wasAccepted, let sessionID = activeSessionID {
+            UserDefaults.standard.set(sessionID, forKey: StorageKey.declinedSessionID)
+        }
         resetActiveCall()
         action.fulfill()
         if wasAccepted {
@@ -151,5 +167,6 @@ final class IncomingCallCoordinator: NSObject, CXProviderDelegate {
         activeSessionID = nil
         activeCallUUID = nil
         isAccepted = false
+        UserDefaults.standard.removeObject(forKey: StorageKey.activeSessionID)
     }
 }

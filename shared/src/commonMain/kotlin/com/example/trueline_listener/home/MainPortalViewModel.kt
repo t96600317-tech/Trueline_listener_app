@@ -518,7 +518,20 @@ class MainPortalViewModel(
     }
 
     fun acceptIncomingCall() {
-        val session = incomingCallSession ?: return
+        val session = incomingCallSession
+        if (session == null) {
+            scope.launch {
+                val incoming = repository.checkIncomingCalls().data
+                if (incoming?.status == "pending") {
+                    incomingCallSession = incoming
+                    acceptIncomingCall()
+                } else {
+                    errorMessage = "This incoming call is no longer available"
+                    com.example.trueline_listener.call.IncomingCallAlert.stop()
+                }
+            }
+            return
+        }
         if (acceptingIncomingSessionId == session.id) return
         acceptingIncomingSessionId = session.id
         com.example.trueline_listener.call.IncomingCallAlert.accept(session.id)
@@ -567,7 +580,19 @@ class MainPortalViewModel(
     }
 
     fun declineIncomingCall() {
-        val session = incomingCallSession ?: return
+        val session = incomingCallSession
+        if (session == null) {
+            scope.launch {
+                val incoming = repository.checkIncomingCalls().data
+                if (incoming?.status == "pending") {
+                    incomingCallSession = incoming
+                    declineIncomingCall()
+                } else {
+                    com.example.trueline_listener.call.IncomingCallAlert.stop()
+                }
+            }
+            return
+        }
         acceptingIncomingSessionId = null
         com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
         incomingCallSession = null
