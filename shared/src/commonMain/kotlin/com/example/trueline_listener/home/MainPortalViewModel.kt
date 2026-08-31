@@ -170,6 +170,7 @@ class MainPortalViewModel(
         private set
 
     private var incomingCallWatcherJob: kotlinx.coroutines.Job? = null
+    private var callEventsJob: kotlinx.coroutines.Job? = null
     private var acceptingIncomingSessionId: String? = null
     private var registeredPushToken: String? = null
 
@@ -179,6 +180,7 @@ class MainPortalViewModel(
             onDecline = ::declineIncomingCall
         )
         com.example.trueline_listener.call.IncomingCallAlert.setPushTokenUpdatedHandler(::registerPushToken)
+        restorePendingIncomingCall()
         refreshAllData()
     }
 
@@ -499,6 +501,26 @@ class MainPortalViewModel(
         }
     }
 
+    private fun restorePendingIncomingCall() {
+        val deferredAction = com.example.trueline_listener.call.IncomingCallAlert.consumeDeferredAction()
+        val sessionId = deferredAction?.sessionId
+            ?: com.example.trueline_listener.call.IncomingCallAlert.pendingSessionId()
+            ?: return
+        scope.launch {
+            val incoming = repository.checkIncomingCalls().data
+            if (incoming?.status != "pending" || incoming.id != sessionId) {
+                com.example.trueline_listener.call.IncomingCallAlert.stop(sessionId)
+                return@launch
+            }
+            incomingCallSession = incoming
+            when (deferredAction?.action) {
+                com.example.trueline_listener.call.PendingIncomingCallAction.ACCEPT -> acceptIncomingCall()
+                com.example.trueline_listener.call.PendingIncomingCallAction.DECLINE -> declineIncomingCall()
+                else -> com.example.trueline_listener.call.IncomingCallAlert.start(incoming.id, incoming.caller_name)
+            }
+        }
+    }
+
     private fun registerPushToken() {
         val platform = com.example.trueline_listener.call.IncomingCallAlert.getPushPlatform() ?: return
         val deviceToken = com.example.trueline_listener.call.IncomingCallAlert.getPushToken()?.trim().orEmpty()
@@ -552,6 +574,7 @@ class MainPortalViewModel(
             }
 
             try {
+                startCallEventObserver(session.id)
                 com.example.trueline_listener.call.getCallService().startAudioCall(
                     roomId = callData.room_id,
                     targetUserId = session.caller_id.ifBlank { session.id },
@@ -560,6 +583,7 @@ class MainPortalViewModel(
                     signedUserId = callData.zego_user_id,
                     onCallEnd = {
                         scope.launch {
+                            callEventsJob?.cancel()
                             acceptingIncomingSessionId = null
                             com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                             repository.endCall(session.id, "listener_hangup")
@@ -567,6 +591,7 @@ class MainPortalViewModel(
                         }
                     },
                     onCallStartFailed = { message ->
+                        callEventsJob?.cancel()
                         acceptingIncomingSessionId = null
                         com.example.trueline_listener.call.IncomingCallAlert.stop(session.id)
                         errorMessage = message
@@ -603,6 +628,26 @@ class MainPortalViewModel(
         incomingCallSession = null
         scope.launch {
             repository.endCall(session.id, "listener_decline")
+        }
+    }
+
+    private fun startCallEventObserver(sessionId: String) {
+        callEventsJob?.cancel()
+        callEventsJob = scope.launch {
+            repository.observeCallEvents(sessionId).collect { event ->
+                if (event.type != "call_ended" || acceptingIncomingSessionId != sessionId) return@collect
+                callEventsJob?.cancel()
+                acceptingIncomingSessionId = null
+                com.example.trueline_listener.call.IncomingCallAlert.stop(sessionId)
+                com.example.trueline_listener.call.playCallEndedTone()
+                com.example.trueline_listener.call.getCallService().endCall()
+                errorMessage = when (event.reason) {
+                    "low_balance" -> "The call ended because the customer ran out of coins."
+                    "user_hangup", "connection_failed" -> "The customer ended the call."
+                    else -> "The call was ended by the other participant."
+                }
+                refreshAllData()
+            }
         }
     }
 

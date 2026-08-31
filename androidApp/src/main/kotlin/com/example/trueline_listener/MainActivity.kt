@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         com.example.trueline_listener.location.initLocationProvider(this)
         com.example.trueline_listener.call.initCallService(this)
         com.example.trueline_listener.call.initIncomingCallAlert(this)
+        com.example.trueline_listener.call.handleIncomingCallNotificationIntent(intent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
@@ -58,6 +59,12 @@ class MainActivity : AppCompatActivity() {
 
             App(onboardingViewModel = onboardingViewModel)
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        com.example.trueline_listener.call.handleIncomingCallNotificationIntent(intent)
     }
 }
 

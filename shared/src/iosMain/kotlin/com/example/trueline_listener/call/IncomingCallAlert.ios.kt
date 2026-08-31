@@ -115,5 +115,21 @@ actual object IncomingCallAlert {
 
     actual fun getPushPlatform(): String? = "ios-voip"
 
+    actual fun pendingSessionId(): String? = currentSessionId()
+
+    actual fun consumeDeferredAction(): DeferredIncomingCallAction? {
+        val acceptedSessionId = defaults.stringForKey(ACCEPTED_SESSION_KEY)
+        if (!acceptedSessionId.isNullOrBlank()) {
+            defaults.removeObjectForKey(ACCEPTED_SESSION_KEY)
+            return DeferredIncomingCallAction(acceptedSessionId, PendingIncomingCallAction.ACCEPT)
+        }
+        val declinedSessionId = defaults.stringForKey(DECLINED_SESSION_KEY)
+        if (!declinedSessionId.isNullOrBlank()) {
+            defaults.removeObjectForKey(DECLINED_SESSION_KEY)
+            return DeferredIncomingCallAction(declinedSessionId, PendingIncomingCallAction.DECLINE)
+        }
+        return null
+    }
+
     private fun currentSessionId(): String? = activeSessionId ?: defaults.stringForKey(ACTIVE_SESSION_KEY)
 }

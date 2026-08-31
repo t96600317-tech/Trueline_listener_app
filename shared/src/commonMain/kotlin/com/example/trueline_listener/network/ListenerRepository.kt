@@ -264,7 +264,10 @@ class ListenerRepository(
                 method = HttpMethod.Get,
                 host = host,
                 port = port,
-                path = "/api/v1/calls/$sessionId/events?token=$token"
+                path = "/api/v1/calls/$sessionId/events?token=$token",
+                request = {
+                    if (isSecure) url { protocol = URLProtocol.WSS }
+                }
             ) {
                 while (true) {
                     try {
