@@ -66,10 +66,10 @@ fun ListenerChatScreen(viewModel: MainPortalViewModel) {
 
     // Build chat items from server conversations
     val combinedChats = viewModel.conversations.map { conv ->
-        val effectiveUserId = conv.user_id.ifBlank { conv.listener_id }
-        val name = conv.user_name.ifBlank { conv.listener_name.ifBlank { "user${effectiveUserId.takeLast(6)}" } }
+        val effectiveUserId = conv.displayUserId
+        val name = conv.displayUserName
         val isRegular = conv.is_regular
-        val isOnline = conv.user_availability == "online" || conv.listener_availability == "online"
+        val isOnline = conv.user_availability == "online" || conv.listener_availability == "online" || conv.partner_availability == "online"
         ChatDisplayItem(
             userId = effectiveUserId,
             avatarText = name.take(2).uppercase().ifBlank { "U" },

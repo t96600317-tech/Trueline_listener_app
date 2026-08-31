@@ -125,6 +125,11 @@ data class SimpleMessageResponse(
 
 @Serializable
 data class ChatConversationData(
+    val partner_id: String = "",
+    val partner_name: String = "",
+    val partner_title: String = "",
+    val partner_photo_url: String = "",
+    val partner_availability: String = "online",
     val listener_id: String = "",
     val listener_name: String = "",
     val listener_title: String = "",
@@ -140,7 +145,13 @@ data class ChatConversationData(
     val last_message_time: String = "",
     val unread_count: Int = 0,
     val is_regular: Boolean = false
-)
+) {
+    val displayUserId: String
+        get() = user_id.ifBlank { partner_id.ifBlank { listener_id } }
+
+    val displayUserName: String
+        get() = user_name.ifBlank { partner_name.ifBlank { listener_name.ifBlank { "user${displayUserId.takeLast(6)}" } } }
+}
 
 @Serializable
 data class ChatMessageData(
