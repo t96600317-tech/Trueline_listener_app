@@ -43,7 +43,7 @@ class MainPortalViewModel(
         private set
 
     // Toggle on Home Tab between Milestone Checklist and Active Dashboard
-    var showMilestoneChecklist by mutableStateOf(true)
+    var showMilestoneChecklist by mutableStateOf(false)
         private set
 
     var isOnline by mutableStateOf(true)
@@ -206,11 +206,11 @@ class MainPortalViewModel(
     }
 
     fun toggleMilestonesView(show: Boolean) {
-        showMilestoneChecklist = show
+        showMilestoneChecklist = false
     }
 
     fun showMilestones() {
-        showMilestoneChecklist = true
+        showMilestoneChecklist = false
     }
 
     fun hideMilestones() {
@@ -263,9 +263,6 @@ class MainPortalViewModel(
             if (dashRes.success && dashRes.data != null) {
                 dashboardData = dashRes.data
                 isOnline = dashRes.data.availability == "online"
-                if (dashRes.data.total_calls_count < 1) {
-                    showMilestoneChecklist = true
-                }
             }
 
             val mileRes = repository.getMilestones()

@@ -89,11 +89,7 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                         // Main Tabs
                         when (viewModel.currentTab) {
                             PortalTab.HOME -> {
-                                if (viewModel.showMilestoneChecklist) {
-                                    HomeMilestonesScreen(viewModel = viewModel)
-                                } else {
-                                    HomeDashboardScreen(viewModel = viewModel)
-                                }
+                                HomeDashboardScreen(viewModel = viewModel)
                             }
                             PortalTab.CALLS -> {
                                 CallLogScreen(viewModel = viewModel)
@@ -158,7 +154,7 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: Back arrow on Profile tab or Milestones/Lessons page, or Profile Avatar on other tabs
+        // Left: Back arrow on Profile tab, or Profile Avatar on other tabs
         if (viewModel.currentTab == PortalTab.PROFILE) {
             Surface(
                 modifier = Modifier
@@ -172,24 +168,6 @@ private fun PortalTopHeader(viewModel: MainPortalViewModel) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = "Back to Home",
-                        tint = Color(0xFF475569),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        } else if (viewModel.currentTab == PortalTab.HOME && viewModel.showMilestoneChecklist) {
-            Surface(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .clickable { viewModel.hideMilestones() },
-                shape = CircleShape,
-                color = Color(0xFFE2E8F0)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back to Home Dashboard",
                         tint = Color(0xFF475569),
                         modifier = Modifier.size(20.dp)
                     )

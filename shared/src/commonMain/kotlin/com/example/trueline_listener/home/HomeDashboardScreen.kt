@@ -66,7 +66,7 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
         FirstWeekGuaranteeCard(
             completedCalls = data.total_calls_count,
             targetCalls = 20,
-            onClick = { viewModel.showMilestones() }
+            onClick = null
         )
 
         Spacer(modifier = Modifier.height(16.dp))
