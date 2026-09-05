@@ -542,6 +542,9 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
                     }
 
                     if (response?.success == true) {
+                        if (!response.data?.mock_otp.isNullOrBlank()) {
+                            otp = response.data.mock_otp.orEmpty()
+                        }
                         _currentStep.value = OnboardingStep.OTP_VERIFICATION
                         startResendTimer()
                     } else {
