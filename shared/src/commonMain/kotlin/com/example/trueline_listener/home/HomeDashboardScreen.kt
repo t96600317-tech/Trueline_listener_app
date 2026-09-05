@@ -43,7 +43,8 @@ fun HomeDashboardScreen(viewModel: MainPortalViewModel) {
             balanceStr = balanceStr,
             weekStr = "WEEK 1",
             payoutSubtext = "Weekly payout to UPI",
-            onSeeDetailsClick = { viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS) }
+            onSeeDetailsClick = { viewModel.openSubScreen(PortalSubScreen.TRANSACTIONS) },
+            onWithdrawClick = { viewModel.openWithdrawModal() }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -98,7 +99,8 @@ private fun WalletBalanceCard(
     balanceStr: String,
     weekStr: String,
     payoutSubtext: String,
-    onSeeDetailsClick: () -> Unit
+    onSeeDetailsClick: () -> Unit,
+    onWithdrawClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -139,14 +141,36 @@ private fun WalletBalanceCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Main Balance Amount
-            Text(
-                text = balanceStr,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                letterSpacing = (-0.5).sp
-            )
+            // Main Balance Amount + Withdraw Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = balanceStr,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = (-0.5).sp
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFF0D9488),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onWithdrawClick() }
+                ) {
+                    Text(
+                        text = "Withdraw",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(6.dp))
 

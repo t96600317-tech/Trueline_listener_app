@@ -98,11 +98,11 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                // NEXT PAYOUT Header Label
+                // Available Balance Header Label
                 Text(
-                    text = "NEXT PAYOUT · MON 24 AUG",
+                    text = "AVAILABLE BALANCE · WITHDRAW ANYTIME",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF94A3B8),
@@ -111,25 +111,59 @@ fun EarningsHubScreen(viewModel: MainPortalViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Main Amount Display
+                // Dynamic Available Amount
+                val availCoins = if (viewModel.detailedEarnings.available_to_withdraw_coins > 0) {
+                    viewModel.detailedEarnings.available_to_withdraw_coins
+                } else {
+                    viewModel.dashboardData.this_week_earnings_coins
+                }
+                val formattedBalance = "₹" + if (availCoins % 1.0 == 0.0) {
+                    "${availCoins.toInt()}.00"
+                } else {
+                    val whole = availCoins.toInt()
+                    val fraction = ((availCoins - whole) * 100).toInt()
+                    "$whole.${if (fraction < 10) "0$fraction" else "$fraction"}"
+                }
+
                 Text(
-                    text = "₹1,248.60",
-                    fontSize = 38.sp,
+                    text = formattedBalance,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // UPI Subtext
+                val registeredUpi = viewModel.detailedEarnings.registered_upi.takeIf { it.isNotBlank() && it != "Not registered yet" }
+                val upiLabel = if (registeredUpi != null) "To UPI $registeredUpi" else "Direct transfer to your verified UPI"
                 Text(
-                    text = "To UPI akshaya@okaxis · ••••3421",
-                    fontSize = 13.sp,
+                    text = upiLabel,
+                    fontSize = 12.5.sp,
                     color = Color(0xFF94A3B8),
                     fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Request Payout Button
+                Button(
+                    onClick = { viewModel.openWithdrawModal() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                ) {
+                    Text(
+                        text = "Request Payout / Withdraw",
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
 

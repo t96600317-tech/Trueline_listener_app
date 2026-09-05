@@ -19,7 +19,7 @@ import kotlinx.serialization.json.Json
 
 class ListenerRepository(
     private var primaryHost: String = "api.truelineapp.in",
-    private val storage: SessionStorage = getSessionStorage()
+    val storage: SessionStorage = getSessionStorage()
 ) {
     private var authToken: String? = storage.getAuthToken()
 
@@ -503,7 +503,7 @@ class ListenerRepository(
                 client.post("${getBaseUrl(host)}/api/v1/listener/withdraw") {
                     contentType(ContentType.Application.Json)
                     getAuthToken()?.let { header(HttpHeaders.Authorization, "Bearer $it") }
-                    setBody(mapOf("amount_coins" to amountCoins, "upi_id" to upiId))
+                    setBody(WithdrawRequestPayload(amount_coins = amountCoins, upi_id = upiId))
                 }.body()
             }
         } catch (e: Exception) {

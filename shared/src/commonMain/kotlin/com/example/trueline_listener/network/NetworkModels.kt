@@ -93,6 +93,12 @@ data class PayoutRequestPayload(
 )
 
 @Serializable
+data class WithdrawRequestPayload(
+    val amount_coins: Double,
+    val upi_id: String
+)
+
+@Serializable
 data class CallAcceptResponse(
     val listener_token: String = "",
     val room_id: String = "",

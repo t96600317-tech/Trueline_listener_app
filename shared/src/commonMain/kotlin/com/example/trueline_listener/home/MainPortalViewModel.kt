@@ -653,8 +653,21 @@ class MainPortalViewModel(
     }
 
     fun openWithdrawModal() {
-        withdrawAmount = detailedEarnings.available_to_withdraw_coins.toInt().toString()
-        withdrawUpiId = detailedEarnings.registered_upi.ifBlank { "priya@okaxis" }
+        val avail = if (detailedEarnings.available_to_withdraw_coins > 0) {
+            detailedEarnings.available_to_withdraw_coins
+        } else if (dashboardData.this_week_earnings_coins > 0) {
+            dashboardData.this_week_earnings_coins
+        } else {
+            100.0
+        }
+        withdrawAmount = avail.toInt().toString()
+        val regUpi = detailedEarnings.registered_upi.trim()
+        withdrawUpiId = if (regUpi.isNotBlank() && regUpi != "Not registered yet") {
+            regUpi
+        } else {
+            val phone = repository.storage.getPhone()?.filter { it.isDigit() }?.takeLast(10) ?: ""
+            if (phone.isNotBlank()) "$phone@upi" else "listener@okaxis"
+        }
         showWithdrawModal = true
     }
 
@@ -678,15 +691,19 @@ class MainPortalViewModel(
             errorMessage = "Minimum withdrawal amount is ₹100"
             return
         }
+        if (withdrawUpiId.isBlank() || !withdrawUpiId.contains("@")) {
+            errorMessage = "Please enter a valid UPI ID (e.g. name@upi)"
+            return
+        }
 
         isWithdrawing = true
         errorMessage = null
         scope.launch {
-            val res = repository.requestWithdrawal(amount, withdrawUpiId)
+            val res = repository.requestWithdrawal(amount, withdrawUpiId.trim())
             isWithdrawing = false
             if (res.success) {
                 showWithdrawModal = false
-                successNotification = res.data?.message ?: "Withdrawal request submitted! Paid within 24 hours."
+                successNotification = "Payout request of ₹${amount.toInt()} submitted! Sent to Admin Panel."
                 refreshAllData()
                 delay(4000)
                 successNotification = null

@@ -112,6 +112,11 @@ fun MainPortalScreen(viewModel: MainPortalViewModel) {
                     GoOfflineConfirmModal(viewModel = viewModel)
                 }
 
+                // Withdraw / Payout Modal
+                if (viewModel.showWithdrawModal) {
+                    WithdrawPayoutModal(viewModel = viewModel)
+                }
+
                 // Toast Notifications
                 viewModel.successNotification?.let { msg ->
                     Box(
