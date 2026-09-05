@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 enum class OnboardingStep {
     PHONE_INPUT,
@@ -504,36 +505,55 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         errorMessage = null
 
         scope.launch {
-            val shouldRetryMsg91 = _currentStep.value == OnboardingStep.OTP_VERIFICATION &&
-                !msg91RequestId.isNullOrBlank()
-            val msg91Result = if (msg91Otp.isConfigured) {
-                if (shouldRetryMsg91) {
-                    msg91Otp.retryOtp(msg91RequestId.orEmpty())
-                } else {
-                    msg91Otp.sendOtp("91$phoneNumber")
+            try {
+                val shouldRetryMsg91 = _currentStep.value == OnboardingStep.OTP_VERIFICATION &&
+                    !msg91RequestId.isNullOrBlank()
+
+                var msg91Result: Msg91OtpResult? = null
+                if (msg91Otp.isConfigured) {
+                    try {
+                        withTimeoutOrNull(15000L) {
+                            msg91Result = if (shouldRetryMsg91) {
+                                msg91Otp.retryOtp(msg91RequestId.orEmpty())
+                            } else {
+                                msg91Otp.sendOtp("91$phoneNumber")
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        msg91Result = null
+                    }
                 }
-            } else {
-                null
-            }
-            if (msg91Result?.success == true) {
-                if (!shouldRetryMsg91) {
-                    msg91RequestId = msg91Result.requestId
-                }
-                isLoading = false
-                _currentStep.value = OnboardingStep.OTP_VERIFICATION
-                startResendTimer()
-            } else if (msg91Result != null) {
-                isLoading = false
-                errorMessage = msg91Result.errorMessage ?: "Failed to send OTP. Please retry."
-            } else {
-                val response = repository.requestOtp(phoneNumber)
-                isLoading = false
-                if (response.success) {
+
+                if (msg91Result?.success == true) {
+                    if (!shouldRetryMsg91) {
+                        msg91RequestId = msg91Result?.requestId
+                    }
                     _currentStep.value = OnboardingStep.OTP_VERIFICATION
                     startResendTimer()
                 } else {
-                    errorMessage = response.error?.message ?: "Failed to send OTP. Please retry."
+                    // Fallback to backend OTP service
+                    msg91RequestId = null
+                    val response = try {
+                        withTimeoutOrNull(15000L) {
+                            repository.requestOtp(phoneNumber)
+                        }
+                    } catch (_: Throwable) {
+                        null
+                    }
+
+                    if (response?.success == true) {
+                        _currentStep.value = OnboardingStep.OTP_VERIFICATION
+                        startResendTimer()
+                    } else {
+                        val backendError = response?.error?.message
+                        val msg91Error = msg91Result?.errorMessage
+                        errorMessage = backendError ?: msg91Error ?: "Failed to send OTP. Please check your network and retry."
+                    }
                 }
+            } catch (t: Throwable) {
+                errorMessage = t.message ?: "Failed to send OTP. Please retry."
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -548,71 +568,84 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         errorMessage = null
 
         scope.launch {
-            val msg91Result = if (msg91Otp.isConfigured) {
-                val requestId = msg91RequestId
-                if (requestId.isNullOrBlank()) {
-                    Msg91OtpResult(false, errorMessage = "Please request a new OTP.")
-                } else {
-                    msg91Otp.verifyOtp(requestId, otp)
-                }
-            } else {
-                null
-            }
-            if (msg91Result != null && !msg91Result.success) {
-                isLoading = false
-                errorMessage = msg91Result.errorMessage ?: "Invalid OTP. Please try again."
-                return@launch
-            }
-            if (msg91Result != null && msg91Result.accessToken.isNullOrBlank()) {
-                msg91RequestId = null
-                isLoading = false
-                errorMessage = "MSG91 verified the code but did not return an access token. Please request a new OTP."
-                return@launch
-            }
-
-            val response = repository.verifyOtp(phoneNumber, otp, msg91RequestId, msg91Result?.accessToken)
-            isLoading = false
-            if (response.success) {
-                val listener = response.data?.listener
-                val step = response.data?.onboarding_step ?: listener?.onboarding_step ?: "profile_setup"
-                val kycStatus = response.data?.kyc_status ?: listener?.kyc_status ?: "pending"
-
-                // Populate existing profile data if available
-                if (listener != null && listener.name.isNotBlank()) {
-                    fullName = listener.name
-                } else if (fullName.isBlank()) {
-                    fullName = com.example.trueline_listener.ui.IndianListenerNames.getRandomName()
-                }
-
-                if (listener != null) {
-                    if (listener.bio.isNotBlank()) bio = listener.bio
-                    if (listener.languages.isNotEmpty()) {
-                        selectedLanguages = listener.languages.toSet()
+            try {
+                var accessToken: String? = null
+                if (msg91Otp.isConfigured && !msg91RequestId.isNullOrBlank()) {
+                    val msg91Result = try {
+                        withTimeoutOrNull(15000L) {
+                            msg91Otp.verifyOtp(msg91RequestId.orEmpty(), otp)
+                        }
+                    } catch (_: Throwable) {
+                        null
+                    }
+                    if (msg91Result != null) {
+                        if (!msg91Result.success) {
+                            errorMessage = msg91Result.errorMessage ?: "Invalid OTP. Please try again."
+                            return@launch
+                        }
+                        accessToken = msg91Result.accessToken
                     }
                 }
 
-                val targetStep = when (step.lowercase()) {
-                    "voice_intro", "voice" -> OnboardingStep.VOICE_INTRO
-                    "face_verification", "face", "selfie" -> OnboardingStep.FACE_VERIFICATION
-                    "kyc_documents", "kyc_document", "kyc", "pan", "aadhaar" -> OnboardingStep.KYC_DOCUMENT
-                    "agreement", "agreements" -> OnboardingStep.AGREEMENT
-                    "application_submitted", "pending_approval", "application_pending", "submitted", "under_review" -> OnboardingStep.SUBMITTED_PENDING_APPROVAL
-                    "approved", "approved_welcome" -> OnboardingStep.APPROVED_WELCOME
-                    else -> OnboardingStep.PROFILE_SETUP
+                val response = try {
+                    withTimeoutOrNull(15000L) {
+                        repository.verifyOtp(phoneNumber, otp, msg91RequestId, accessToken)
+                    }
+                } catch (_: Throwable) {
+                    null
                 }
 
-                if (kycStatus.lowercase() == "approved" || step.lowercase() in listOf("approved", "approved_welcome")) {
-                    isApprovedListener = true
-                    _currentStep.value = OnboardingStep.APPROVED_WELCOME
-                    onEnterPortal?.invoke()
-                } else if (step.lowercase() in listOf("application_submitted", "pending_approval", "application_pending", "submitted", "under_review") ||
-                           (kycStatus.lowercase() == "pending" && step.lowercase() in listOf("agreement", "agreements"))) {
-                    _currentStep.value = OnboardingStep.SUBMITTED_PENDING_APPROVAL
-                } else {
-                    _currentStep.value = targetStep
+                if (response == null) {
+                    errorMessage = "Verification timed out. Please check your internet connection."
+                    return@launch
                 }
-            } else {
-                errorMessage = response.error?.message ?: "Invalid OTP. Please check the code and try again."
+
+                if (response.success) {
+                    val listener = response.data?.listener
+                    val step = response.data?.onboarding_step ?: listener?.onboarding_step ?: "profile_setup"
+                    val kycStatus = response.data?.kyc_status ?: listener?.kyc_status ?: "pending"
+
+                    // Populate existing profile data if available
+                    if (listener != null && listener.name.isNotBlank()) {
+                        fullName = listener.name
+                    } else if (fullName.isBlank()) {
+                        fullName = com.example.trueline_listener.ui.IndianListenerNames.getRandomName()
+                    }
+
+                    if (listener != null) {
+                        if (listener.bio.isNotBlank()) bio = listener.bio
+                        if (listener.languages.isNotEmpty()) {
+                            selectedLanguages = listener.languages.toSet()
+                        }
+                    }
+
+                    val targetStep = when (step.lowercase()) {
+                        "voice_intro", "voice" -> OnboardingStep.VOICE_INTRO
+                        "face_verification", "face", "selfie" -> OnboardingStep.FACE_VERIFICATION
+                        "kyc_documents", "kyc_document", "kyc", "pan", "aadhaar" -> OnboardingStep.KYC_DOCUMENT
+                        "agreement", "agreements" -> OnboardingStep.AGREEMENT
+                        "application_submitted", "pending_approval", "application_pending", "submitted", "under_review" -> OnboardingStep.SUBMITTED_PENDING_APPROVAL
+                        "approved", "approved_welcome" -> OnboardingStep.APPROVED_WELCOME
+                        else -> OnboardingStep.PROFILE_SETUP
+                    }
+
+                    if (kycStatus.lowercase() == "approved" || step.lowercase() in listOf("approved", "approved_welcome")) {
+                        isApprovedListener = true
+                        _currentStep.value = OnboardingStep.APPROVED_WELCOME
+                        onEnterPortal?.invoke()
+                    } else if (step.lowercase() in listOf("application_submitted", "pending_approval", "application_pending", "submitted", "under_review") ||
+                               (kycStatus.lowercase() == "pending" && step.lowercase() in listOf("agreement", "agreements"))) {
+                        _currentStep.value = OnboardingStep.SUBMITTED_PENDING_APPROVAL
+                    } else {
+                        _currentStep.value = targetStep
+                    }
+                } else {
+                    errorMessage = response.error?.message ?: "Invalid OTP. Please check the code and try again."
+                }
+            } catch (t: Throwable) {
+                errorMessage = t.message ?: "Failed to verify OTP. Please retry."
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -641,17 +674,22 @@ class OnboardingViewModel(private val scope: CoroutineScope) {
         errorMessage = null
 
         scope.launch {
-            val response = repository.updateProfile(
-                name = fullName,
-                title = "Compassionate Listener • $cityState",
-                bio = bio.ifBlank { "Hello! I am $fullName, here to listen with compassion and warmth." },
-                languages = selectedLanguages.toList()
-            )
-            isLoading = false
-            if (response.success) {
-                _currentStep.value = OnboardingStep.VOICE_INTRO
-            } else {
-                errorMessage = response.error?.message ?: "Failed to save profile. Please retry."
+            try {
+                val response = repository.updateProfile(
+                    name = fullName,
+                    title = "Compassionate Listener • $cityState",
+                    bio = bio.ifBlank { "Hello! I am $fullName, here to listen with compassion and warmth." },
+                    languages = selectedLanguages.toList()
+                )
+                if (response.success) {
+                    _currentStep.value = OnboardingStep.VOICE_INTRO
+                } else {
+                    errorMessage = response.error?.message ?: "Failed to save profile. Please retry."
+                }
+            } catch (t: Throwable) {
+                errorMessage = t.message ?: "Failed to save profile. Please retry."
+            } finally {
+                isLoading = false
             }
         }
     }

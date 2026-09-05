@@ -23,11 +23,19 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
     override val isConfigured: Boolean
         get() = configuration.isConfigured
 
+    private fun ensureTimeouts() {
+        try {
+            System.setProperty("sun.net.client.defaultConnectTimeout", "10000")
+            System.setProperty("sun.net.client.defaultReadTimeout", "15000")
+        } catch (_: Throwable) {}
+    }
+
     override suspend fun sendOtp(identifier: String): Msg91OtpResult = withContext(Dispatchers.IO) {
         if (!isConfigured) {
             return@withContext Msg91OtpResult(false, errorMessage = "MSG91 is not configured for this build.")
         }
 
+        ensureTimeouts()
         try {
             val result = OTPWidget.sendOTP(
                 configuration.widgetId,
@@ -35,8 +43,8 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
                 identifier.removePrefix("+")
             )
             parseSendResponse(result)
-        } catch (_: Exception) {
-            Msg91OtpResult(false, errorMessage = "Unable to contact MSG91. Please try again.")
+        } catch (e: Throwable) {
+            Msg91OtpResult(false, errorMessage = e.message ?: "Unable to contact MSG91. Please try again.")
         }
     }
 
@@ -45,6 +53,7 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
             return@withContext Msg91OtpResult(false, errorMessage = "MSG91 is not configured for this build.")
         }
 
+        ensureTimeouts()
         try {
             val result = OTPWidget.retryOTP(
                 configuration.widgetId,
@@ -53,8 +62,8 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
                 channel
             )
             parseResponse(result, requestId)
-        } catch (_: Exception) {
-            Msg91OtpResult(false, errorMessage = "Unable to resend the OTP. Please try again.")
+        } catch (e: Throwable) {
+            Msg91OtpResult(false, errorMessage = e.message ?: "Unable to resend the OTP. Please try again.")
         }
     }
 
@@ -66,6 +75,7 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
             return@withContext Msg91OtpResult(false, errorMessage = "OTP request details are missing. Please request a new code.")
         }
 
+        ensureTimeouts()
         try {
             val result = OTPWidget.verifyOTP(
                 configuration.widgetId,
@@ -74,8 +84,8 @@ private object AndroidMsg91OtpGateway : Msg91OtpGateway {
                 otp
             )
             parseVerificationResponse(result, requestId)
-        } catch (_: Exception) {
-            Msg91OtpResult(false, errorMessage = "Unable to verify the OTP. Please try again.")
+        } catch (e: Throwable) {
+            Msg91OtpResult(false, errorMessage = e.message ?: "Unable to verify the OTP. Please try again.")
         }
     }
 }

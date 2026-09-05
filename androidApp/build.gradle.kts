@@ -19,8 +19,8 @@ fun msg91Property(name: String): String = providers.gradleProperty(name)
     .orElse(localProperties.getProperty(name) ?: "")
     .get()
 
-val msg91WidgetId = msg91Property("MSG91_WIDGET_ID")
-val msg91AuthToken = msg91Property("MSG91_AUTH_TOKEN")
+val msg91WidgetId = msg91Property("MSG91_LISTENER_WIDGET_ID").ifBlank { msg91Property("MSG91_WIDGET_ID") }
+val msg91AuthToken = msg91Property("MSG91_LISTENER_WIDGET_AUTH_TOKEN").ifBlank { msg91Property("MSG91_AUTH_TOKEN") }
 
 fun buildConfigString(value: String): String =
     "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
